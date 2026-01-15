@@ -42,6 +42,86 @@ func (t *TaskScope) MoveToColumn(ctx context.Context, columnID int) error {
 	return t.client.MoveTaskPosition(ctx, int(task.ProjectID), t.taskID, columnID, 0, int(task.SwimlaneID))
 }
 
+// MoveToNextColumn moves the task to the next column in the workflow.
+// Columns are ordered by their position field.
+// Returns ErrAlreadyInLastColumn if the task is already in the last column.
+func (t *TaskScope) MoveToNextColumn(ctx context.Context) error {
+	// Get task to find current column and project
+	task, err := t.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get all columns for the project (already sorted by position)
+	columns, err := t.client.GetColumns(ctx, int(task.ProjectID))
+	if err != nil {
+		return err
+	}
+
+	if len(columns) == 0 {
+		return ErrAlreadyInLastColumn
+	}
+
+	// Find the current column index
+	currentColumnID := int(task.ColumnID)
+	currentIndex := -1
+	for i, col := range columns {
+		if int(col.ID) == currentColumnID {
+			currentIndex = i
+			break
+		}
+	}
+
+	// If current column not found or is the last column
+	if currentIndex == -1 || currentIndex >= len(columns)-1 {
+		return ErrAlreadyInLastColumn
+	}
+
+	// Move to the next column
+	nextColumn := columns[currentIndex+1]
+	return t.client.MoveTaskPosition(ctx, int(task.ProjectID), t.taskID, int(nextColumn.ID), 0, int(task.SwimlaneID))
+}
+
+// MoveToPreviousColumn moves the task to the previous column in the workflow.
+// Columns are ordered by their position field.
+// Returns ErrAlreadyInFirstColumn if the task is already in the first column.
+func (t *TaskScope) MoveToPreviousColumn(ctx context.Context) error {
+	// Get task to find current column and project
+	task, err := t.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Get all columns for the project (already sorted by position)
+	columns, err := t.client.GetColumns(ctx, int(task.ProjectID))
+	if err != nil {
+		return err
+	}
+
+	if len(columns) == 0 {
+		return ErrAlreadyInFirstColumn
+	}
+
+	// Find the current column index
+	currentColumnID := int(task.ColumnID)
+	currentIndex := -1
+	for i, col := range columns {
+		if int(col.ID) == currentColumnID {
+			currentIndex = i
+			break
+		}
+	}
+
+	// If current column not found or is the first column
+	if currentIndex <= 0 {
+		return ErrAlreadyInFirstColumn
+	}
+
+	// Move to the previous column
+	prevColumn := columns[currentIndex-1]
+	return t.client.MoveTaskPosition(ctx, int(task.ProjectID), t.taskID, int(prevColumn.ID), 0, int(task.SwimlaneID))
+}
+
 // MoveToProject moves the task to a different project.
 func (t *TaskScope) MoveToProject(ctx context.Context, projectID int) error {
 	return t.client.MoveTaskToProject(ctx, t.taskID, projectID)

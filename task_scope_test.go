@@ -3,6 +3,7 @@ package kanboard
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -177,6 +178,209 @@ func TestTaskScope_MoveToColumn(t *testing.T) {
 	err := client.Task(42).MoveToColumn(context.Background(), 3)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTaskScope_MoveToNextColumn(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		callCount++
+		switch callCount {
+		case 1:
+			// First call: getTask
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`{"id": "42", "project_id": "1", "column_id": "2", "swimlane_id": "0", "is_active": "1"}`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case 2:
+			// Second call: getColumns
+			if req.Method != "getColumns" {
+				t.Errorf("expected method=getColumns, got %s", req.Method)
+			}
+			// Return columns in position order
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result: json.RawMessage(`[
+					{"id": "1", "title": "Backlog", "position": "1", "project_id": "1"},
+					{"id": "2", "title": "In Progress", "position": "2", "project_id": "1"},
+					{"id": "3", "title": "Done", "position": "3", "project_id": "1"}
+				]`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case 3:
+			// Third call: moveTaskPosition
+			if req.Method != "moveTaskPosition" {
+				t.Errorf("expected method=moveTaskPosition, got %s", req.Method)
+			}
+			params := req.Params.(map[string]any)
+			if params["column_id"].(float64) != 3 {
+				t.Errorf("expected column_id=3 (Done), got %v", params["column_id"])
+			}
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`true`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.Task(42).MoveToNextColumn(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTaskScope_MoveToNextColumn_AlreadyInLastColumn(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		callCount++
+		switch callCount {
+		case 1:
+			// Task is already in column 3 (Done)
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`{"id": "42", "project_id": "1", "column_id": "3", "swimlane_id": "0", "is_active": "1"}`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case 2:
+			// getColumns
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result: json.RawMessage(`[
+					{"id": "1", "title": "Backlog", "position": "1", "project_id": "1"},
+					{"id": "2", "title": "In Progress", "position": "2", "project_id": "1"},
+					{"id": "3", "title": "Done", "position": "3", "project_id": "1"}
+				]`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		default:
+			t.Error("moveTaskPosition should not be called when already in last column")
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.Task(42).MoveToNextColumn(context.Background())
+	if err == nil {
+		t.Fatal("expected error for task already in last column")
+	}
+
+	if !errors.Is(err, ErrAlreadyInLastColumn) {
+		t.Errorf("expected ErrAlreadyInLastColumn, got %v", err)
+	}
+}
+
+func TestTaskScope_MoveToPreviousColumn(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		callCount++
+		switch callCount {
+		case 1:
+			// Task in column 2 (In Progress)
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`{"id": "42", "project_id": "1", "column_id": "2", "swimlane_id": "0", "is_active": "1"}`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case 2:
+			// getColumns
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result: json.RawMessage(`[
+					{"id": "1", "title": "Backlog", "position": "1", "project_id": "1"},
+					{"id": "2", "title": "In Progress", "position": "2", "project_id": "1"},
+					{"id": "3", "title": "Done", "position": "3", "project_id": "1"}
+				]`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case 3:
+			// moveTaskPosition
+			params := req.Params.(map[string]any)
+			if params["column_id"].(float64) != 1 {
+				t.Errorf("expected column_id=1 (Backlog), got %v", params["column_id"])
+			}
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`true`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.Task(42).MoveToPreviousColumn(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTaskScope_MoveToPreviousColumn_AlreadyInFirstColumn(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		callCount++
+		switch callCount {
+		case 1:
+			// Task is already in column 1 (Backlog)
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`{"id": "42", "project_id": "1", "column_id": "1", "swimlane_id": "0", "is_active": "1"}`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case 2:
+			// getColumns
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result: json.RawMessage(`[
+					{"id": "1", "title": "Backlog", "position": "1", "project_id": "1"},
+					{"id": "2", "title": "In Progress", "position": "2", "project_id": "1"},
+					{"id": "3", "title": "Done", "position": "3", "project_id": "1"}
+				]`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		default:
+			t.Error("moveTaskPosition should not be called when already in first column")
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.Task(42).MoveToPreviousColumn(context.Background())
+	if err == nil {
+		t.Fatal("expected error for task already in first column")
+	}
+
+	if !errors.Is(err, ErrAlreadyInFirstColumn) {
+		t.Errorf("expected ErrAlreadyInFirstColumn, got %v", err)
 	}
 }
 
