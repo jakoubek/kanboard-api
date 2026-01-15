@@ -39,6 +39,9 @@ var (
 
 	// ErrCommentNotFound indicates the specified comment was not found.
 	ErrCommentNotFound = errors.New("comment not found")
+
+	// ErrCategoryNotFound indicates the specified category was not found.
+	ErrCategoryNotFound = errors.New("category not found")
 )
 
 // Logic errors
@@ -82,7 +85,8 @@ func IsNotFound(err error) bool {
 		errors.Is(err, ErrProjectNotFound) ||
 		errors.Is(err, ErrTaskNotFound) ||
 		errors.Is(err, ErrColumnNotFound) ||
-		errors.Is(err, ErrCommentNotFound)
+		errors.Is(err, ErrCommentNotFound) ||
+		errors.Is(err, ErrCategoryNotFound)
 }
 
 // IsUnauthorized returns true if the error indicates an authentication failure.
