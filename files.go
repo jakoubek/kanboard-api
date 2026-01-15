@@ -29,7 +29,7 @@ func (c *Client) CreateTaskFile(ctx context.Context, projectID, taskID int, file
 		"blob":       base64.StdEncoding.EncodeToString(content),
 	}
 
-	var result int
+	var result IntOrFalse
 	if err := c.call(ctx, "createTaskFile", params, &result); err != nil {
 		return 0, fmt.Errorf("createTaskFile: %w", err)
 	}
@@ -38,7 +38,7 @@ func (c *Client) CreateTaskFile(ctx context.Context, projectID, taskID int, file
 		return 0, fmt.Errorf("createTaskFile: failed to upload file")
 	}
 
-	return result, nil
+	return int(result), nil
 }
 
 // DownloadTaskFile downloads a file's content by its ID.

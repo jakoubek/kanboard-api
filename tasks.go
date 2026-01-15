@@ -41,7 +41,7 @@ func (c *Client) GetAllTasks(ctx context.Context, projectID int, status TaskStat
 
 // CreateTask creates a new task and returns the created task.
 func (c *Client) CreateTask(ctx context.Context, req CreateTaskRequest) (*Task, error) {
-	var taskID int
+	var taskID IntOrFalse
 	if err := c.call(ctx, "createTask", req, &taskID); err != nil {
 		return nil, fmt.Errorf("createTask: %w", err)
 	}
@@ -51,7 +51,7 @@ func (c *Client) CreateTask(ctx context.Context, req CreateTaskRequest) (*Task, 
 	}
 
 	// Fetch the created task to return full details
-	return c.GetTask(ctx, taskID)
+	return c.GetTask(ctx, int(taskID))
 }
 
 // UpdateTask updates an existing task.

@@ -2,6 +2,7 @@ package kanboard
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 )
 
@@ -103,6 +104,33 @@ func (i *StringInt64) UnmarshalJSON(data []byte) error {
 	}
 	*i = StringInt64(val)
 	return nil
+}
+
+// IntOrFalse is an int that can be unmarshaled from a JSON int or false.
+// Kanboard API returns false on failure, int (ID) on success for create operations.
+type IntOrFalse int
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (i *IntOrFalse) UnmarshalJSON(data []byte) error {
+	// Try as int first (success case)
+	var n int
+	if err := json.Unmarshal(data, &n); err == nil {
+		*i = IntOrFalse(n)
+		return nil
+	}
+
+	// Try as bool (failure case: false)
+	var b bool
+	if err := json.Unmarshal(data, &b); err == nil {
+		if b {
+			*i = 1 // true shouldn't happen, but handle it
+		} else {
+			*i = 0
+		}
+		return nil
+	}
+
+	return fmt.Errorf("cannot unmarshal %s into IntOrFalse", data)
 }
 
 // Project represents a Kanboard project (board).

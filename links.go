@@ -27,7 +27,7 @@ func (c *Client) CreateTaskLink(ctx context.Context, taskID, oppositeTaskID, lin
 		"link_id":          linkID,
 	}
 
-	var result int
+	var result IntOrFalse
 	if err := c.call(ctx, "createTaskLink", params, &result); err != nil {
 		return 0, fmt.Errorf("createTaskLink: %w", err)
 	}
@@ -36,7 +36,7 @@ func (c *Client) CreateTaskLink(ctx context.Context, taskID, oppositeTaskID, lin
 		return 0, fmt.Errorf("createTaskLink: failed to create link")
 	}
 
-	return result, nil
+	return int(result), nil
 }
 
 // RemoveTaskLink deletes a task link.

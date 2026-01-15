@@ -75,11 +75,11 @@ func (c *Client) CreateTag(ctx context.Context, projectID int, name, colorID str
 		params["color_id"] = colorID
 	}
 
-	var result int
+	var result IntOrFalse
 	if err := c.call(ctx, "createTag", params, &result); err != nil {
 		return 0, fmt.Errorf("createTag: %w", err)
 	}
-	return result, nil
+	return int(result), nil
 }
 
 // UpdateTag updates an existing tag's name and/or color.

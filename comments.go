@@ -42,7 +42,7 @@ func (c *Client) CreateComment(ctx context.Context, taskID, userID int, content 
 		"content": content,
 	}
 
-	var commentID int
+	var commentID IntOrFalse
 	if err := c.call(ctx, "createComment", params, &commentID); err != nil {
 		return nil, fmt.Errorf("createComment: %w", err)
 	}
@@ -52,7 +52,7 @@ func (c *Client) CreateComment(ctx context.Context, taskID, userID int, content 
 	}
 
 	// Fetch the created comment to return full details
-	return c.GetComment(ctx, commentID)
+	return c.GetComment(ctx, int(commentID))
 }
 
 // UpdateComment updates the content of a comment.
