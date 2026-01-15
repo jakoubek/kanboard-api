@@ -100,3 +100,61 @@ func (c *Client) OpenTask(ctx context.Context, taskID int) error {
 
 	return nil
 }
+
+// SearchTasks searches for tasks in a project using Kanboard's query syntax.
+// The query supports filters like: status:open, assignee:me, color:red, etc.
+func (c *Client) SearchTasks(ctx context.Context, projectID int, query string) ([]Task, error) {
+	params := map[string]any{
+		"project_id": projectID,
+		"query":      query,
+	}
+
+	var result []Task
+	if err := c.call(ctx, "searchTasks", params, &result); err != nil {
+		return nil, fmt.Errorf("searchTasks: %w", err)
+	}
+
+	return result, nil
+}
+
+// MoveTaskPosition moves a task to a specific position within a column and swimlane.
+// Use position=1 for first position, position=0 to append at end.
+func (c *Client) MoveTaskPosition(ctx context.Context, projectID, taskID, columnID, position, swimlaneID int) error {
+	params := map[string]int{
+		"project_id":  projectID,
+		"task_id":     taskID,
+		"column_id":   columnID,
+		"position":    position,
+		"swimlane_id": swimlaneID,
+	}
+
+	var success bool
+	if err := c.call(ctx, "moveTaskPosition", params, &success); err != nil {
+		return fmt.Errorf("moveTaskPosition: %w", err)
+	}
+
+	if !success {
+		return fmt.Errorf("moveTaskPosition: failed to move task %d", taskID)
+	}
+
+	return nil
+}
+
+// MoveTaskToProject moves a task to a different project.
+func (c *Client) MoveTaskToProject(ctx context.Context, taskID, projectID int) error {
+	params := map[string]int{
+		"task_id":    taskID,
+		"project_id": projectID,
+	}
+
+	var success bool
+	if err := c.call(ctx, "moveTaskToProject", params, &success); err != nil {
+		return fmt.Errorf("moveTaskToProject: %w", err)
+	}
+
+	if !success {
+		return fmt.Errorf("moveTaskToProject: failed to move task %d to project %d", taskID, projectID)
+	}
+
+	return nil
+}

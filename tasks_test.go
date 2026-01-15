@@ -508,3 +508,191 @@ func TestClient_GetTask_ContextCanceled(t *testing.T) {
 		t.Fatal("expected error due to canceled context")
 	}
 }
+
+func TestClient_SearchTasks(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "searchTasks" {
+			t.Errorf("expected method=searchTasks, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["project_id"].(float64) != 1 {
+			t.Errorf("expected project_id=1, got %v", params["project_id"])
+		}
+		if params["query"] != "status:open assignee:me" {
+			t.Errorf("expected query='status:open assignee:me', got %v", params["query"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result: json.RawMessage(`[
+				{"id": "1", "title": "Task One", "project_id": "1", "is_active": "1"},
+				{"id": "2", "title": "Task Two", "project_id": "1", "is_active": "1"}
+			]`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	tasks, err := client.SearchTasks(context.Background(), 1, "status:open assignee:me")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(tasks) != 2 {
+		t.Errorf("expected 2 tasks, got %d", len(tasks))
+	}
+}
+
+func TestClient_SearchTasks_Empty(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`[]`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	tasks, err := client.SearchTasks(context.Background(), 1, "title:nonexistent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(tasks) != 0 {
+		t.Errorf("expected 0 tasks, got %d", len(tasks))
+	}
+}
+
+func TestClient_MoveTaskPosition(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "moveTaskPosition" {
+			t.Errorf("expected method=moveTaskPosition, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["project_id"].(float64) != 1 {
+			t.Errorf("expected project_id=1, got %v", params["project_id"])
+		}
+		if params["task_id"].(float64) != 42 {
+			t.Errorf("expected task_id=42, got %v", params["task_id"])
+		}
+		if params["column_id"].(float64) != 2 {
+			t.Errorf("expected column_id=2, got %v", params["column_id"])
+		}
+		if params["position"].(float64) != 1 {
+			t.Errorf("expected position=1, got %v", params["position"])
+		}
+		if params["swimlane_id"].(float64) != 0 {
+			t.Errorf("expected swimlane_id=0, got %v", params["swimlane_id"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.MoveTaskPosition(context.Background(), 1, 42, 2, 1, 0)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_MoveTaskPosition_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`false`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.MoveTaskPosition(context.Background(), 1, 42, 999, 1, 0)
+	if err == nil {
+		t.Fatal("expected error for failed move")
+	}
+}
+
+func TestClient_MoveTaskToProject(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "moveTaskToProject" {
+			t.Errorf("expected method=moveTaskToProject, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["task_id"].(float64) != 42 {
+			t.Errorf("expected task_id=42, got %v", params["task_id"])
+		}
+		if params["project_id"].(float64) != 5 {
+			t.Errorf("expected project_id=5, got %v", params["project_id"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.MoveTaskToProject(context.Background(), 42, 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_MoveTaskToProject_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`false`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.MoveTaskToProject(context.Background(), 42, 999)
+	if err == nil {
+		t.Fatal("expected error for failed move")
+	}
+}
