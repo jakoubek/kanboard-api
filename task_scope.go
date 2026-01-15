@@ -254,3 +254,15 @@ func (t *TaskScope) GetComments(ctx context.Context) ([]Comment, error) {
 func (t *TaskScope) AddComment(ctx context.Context, userID int, content string) (*Comment, error) {
 	return t.client.CreateComment(ctx, t.taskID, userID, content)
 }
+
+// GetLinks returns all links for this task.
+func (t *TaskScope) GetLinks(ctx context.Context) ([]TaskLink, error) {
+	return t.client.GetAllTaskLinks(ctx, t.taskID)
+}
+
+// LinkTo creates a link from this task to another task.
+// The linkID specifies the type of relationship (e.g., "blocks", "is blocked by").
+func (t *TaskScope) LinkTo(ctx context.Context, oppositeTaskID, linkID int) error {
+	_, err := t.client.CreateTaskLink(ctx, t.taskID, oppositeTaskID, linkID)
+	return err
+}
