@@ -1,0 +1,114 @@
+package kanboard
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"sync/atomic"
+)
+
+// JSONRPCRequest represents a JSON-RPC 2.0 request.
+type JSONRPCRequest struct {
+	JSONRPC string      `json:"jsonrpc"`
+	Method  string      `json:"method"`
+	ID      int64       `json:"id"`
+	Params  interface{} `json:"params,omitempty"`
+}
+
+// JSONRPCResponse represents a JSON-RPC 2.0 response.
+type JSONRPCResponse struct {
+	JSONRPC string          `json:"jsonrpc"`
+	ID      int64           `json:"id"`
+	Result  json.RawMessage `json:"result,omitempty"`
+	Error   *JSONRPCError   `json:"error,omitempty"`
+}
+
+// JSONRPCError represents a JSON-RPC 2.0 error.
+type JSONRPCError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+// Error implements the error interface.
+func (e *JSONRPCError) Error() string {
+	return fmt.Sprintf("JSON-RPC error (code %d): %s", e.Code, e.Message)
+}
+
+// requestIDCounter provides thread-safe request ID generation.
+var requestIDCounter atomic.Int64
+
+// nextRequestID returns the next request ID in a thread-safe manner.
+func nextRequestID() int64 {
+	return requestIDCounter.Add(1)
+}
+
+// call sends a JSON-RPC request and parses the response.
+// The result parameter should be a pointer to the expected result type.
+func (c *Client) call(ctx context.Context, method string, params interface{}, result interface{}) error {
+	req := JSONRPCRequest{
+		JSONRPC: "2.0",
+		Method:  method,
+		ID:      nextRequestID(),
+		Params:  params,
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	if c.auth != nil {
+		c.auth.Apply(httpReq)
+	}
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrConnectionFailed, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return ErrForbidden
+	}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected HTTP status: %d", resp.StatusCode)
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var rpcResp JSONRPCResponse
+	if err := json.Unmarshal(respBody, &rpcResp); err != nil {
+		return fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	if rpcResp.Error != nil {
+		return &APIError{
+			Code:    rpcResp.Error.Code,
+			Message: rpcResp.Error.Message,
+		}
+	}
+
+	if result != nil && rpcResp.Result != nil {
+		if err := json.Unmarshal(rpcResp.Result, result); err != nil {
+			return fmt.Errorf("failed to unmarshal result: %w", err)
+		}
+	}
+
+	return nil
+}
