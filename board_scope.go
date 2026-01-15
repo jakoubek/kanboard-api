@@ -42,3 +42,10 @@ func (b *BoardScope) CreateTask(ctx context.Context, req CreateTaskRequest) (*Ta
 	req.ProjectID = b.projectID
 	return b.client.CreateTask(ctx, req)
 }
+
+// CreateTaskFromParams creates a new task in the project using TaskParams.
+// This provides a fluent interface for task creation.
+func (b *BoardScope) CreateTaskFromParams(ctx context.Context, params *TaskParams) (*Task, error) {
+	req := params.toCreateTaskRequest(b.projectID)
+	return b.client.CreateTask(ctx, req)
+}
