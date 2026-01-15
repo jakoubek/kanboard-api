@@ -67,6 +67,13 @@ func (c *Client) UpdateTask(ctx context.Context, req UpdateTaskRequest) error {
 	return nil
 }
 
+// UpdateTaskFromParams updates an existing task using TaskUpdateParams.
+// This provides a fluent interface for task updates.
+func (c *Client) UpdateTaskFromParams(ctx context.Context, taskID int, params *TaskUpdateParams) error {
+	req := params.toUpdateTaskRequest(taskID)
+	return c.UpdateTask(ctx, req)
+}
+
 // CloseTask closes a task (sets it to inactive).
 // Returns ErrTaskClosed if the task is already closed.
 func (c *Client) CloseTask(ctx context.Context, taskID int) error {
