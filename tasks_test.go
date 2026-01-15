@@ -696,3 +696,114 @@ func TestClient_MoveTaskToProject_Failure(t *testing.T) {
 		t.Fatal("expected error for failed move")
 	}
 }
+
+func TestClient_SearchTasksGlobally(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		switch req.Method {
+		case "getAllProjects":
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result: json.RawMessage(`[
+					{"id": "1", "name": "Project One", "is_active": "1"},
+					{"id": "2", "name": "Project Two", "is_active": "1"}
+				]`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		case "searchTasks":
+			params := req.Params.(map[string]any)
+			projectID := int(params["project_id"].(float64))
+			query := params["query"].(string)
+
+			if query != "status:open" {
+				t.Errorf("expected query='status:open', got %s", query)
+			}
+
+			// Return different tasks for each project
+			var result string
+			if projectID == 1 {
+				result = `[{"id": "1", "title": "Task from P1", "project_id": "1", "is_active": "1"}]`
+			} else {
+				result = `[{"id": "2", "title": "Task from P2", "project_id": "2", "is_active": "1"}]`
+			}
+
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(result),
+			}
+			json.NewEncoder(w).Encode(resp)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	tasks, err := client.SearchTasksGlobally(context.Background(), "status:open")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(tasks) != 2 {
+		t.Errorf("expected 2 tasks from 2 projects, got %d", len(tasks))
+	}
+}
+
+func TestClient_SearchTasksGlobally_NoProjects(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`[]`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	tasks, err := client.SearchTasksGlobally(context.Background(), "status:open")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(tasks) != 0 {
+		t.Errorf("expected 0 tasks, got %d", len(tasks))
+	}
+}
+
+func TestClient_SearchTasksGlobally_ContextCanceled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method == "getAllProjects" {
+			resp := JSONRPCResponse{
+				JSONRPC: "2.0",
+				ID:      req.ID,
+				Result:  json.RawMessage(`[{"id": "1", "name": "Project", "is_active": "1"}]`),
+			}
+			json.NewEncoder(w).Encode(resp)
+		} else {
+			// Hang forever for searchTasks
+			select {}
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := client.SearchTasksGlobally(ctx, "status:open")
+	if err == nil {
+		t.Fatal("expected error due to canceled context")
+	}
+}

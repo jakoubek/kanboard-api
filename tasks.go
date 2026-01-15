@@ -3,6 +3,8 @@ package kanboard
 import (
 	"context"
 	"fmt"
+
+	"golang.org/x/sync/errgroup"
 )
 
 // GetTask returns a task by its ID.
@@ -164,4 +166,51 @@ func (c *Client) MoveTaskToProject(ctx context.Context, taskID, projectID int) e
 	}
 
 	return nil
+}
+
+// SearchTasksGlobally searches for tasks across all accessible projects.
+// The search is executed in parallel across all projects using errgroup.
+// If any project search fails, all ongoing searches are cancelled.
+func (c *Client) SearchTasksGlobally(ctx context.Context, query string) ([]Task, error) {
+	// Get all accessible projects
+	projects, err := c.GetAllProjects(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("searchTasksGlobally: %w", err)
+	}
+
+	if len(projects) == 0 {
+		return []Task{}, nil
+	}
+
+	// Use errgroup for parallel execution with context cancellation
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Slice to store results from each project (one per project, thread-safe by index)
+	results := make([][]Task, len(projects))
+
+	// Launch parallel searches
+	for i, project := range projects {
+		i, projectID := i, int(project.ID)
+		g.Go(func() error {
+			tasks, err := c.SearchTasks(ctx, projectID, query)
+			if err != nil {
+				return err
+			}
+			results[i] = tasks
+			return nil
+		})
+	}
+
+	// Wait for all goroutines
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("searchTasksGlobally: %w", err)
+	}
+
+	// Aggregate results
+	var allTasks []Task
+	for _, tasks := range results {
+		allTasks = append(allTasks, tasks...)
+	}
+
+	return allTasks, nil
 }
