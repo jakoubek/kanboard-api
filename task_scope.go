@@ -266,3 +266,18 @@ func (t *TaskScope) LinkTo(ctx context.Context, oppositeTaskID, linkID int) erro
 	_, err := t.client.CreateTaskLink(ctx, t.taskID, oppositeTaskID, linkID)
 	return err
 }
+
+// GetFiles returns all files attached to this task.
+func (t *TaskScope) GetFiles(ctx context.Context) ([]TaskFile, error) {
+	return t.client.GetAllTaskFiles(ctx, t.taskID)
+}
+
+// UploadFile uploads a file to this task and returns the file ID.
+// The file content is automatically base64 encoded.
+func (t *TaskScope) UploadFile(ctx context.Context, filename string, content []byte) (int, error) {
+	task, err := t.Get(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return t.client.CreateTaskFile(ctx, int(task.ProjectID), t.taskID, filename, content)
+}
