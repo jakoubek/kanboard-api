@@ -25,6 +25,9 @@ func TestStringBool_UnmarshalJSON(t *testing.T) {
 		{"string 0", `"0"`, false},
 		{"string true", `"true"`, true},
 		{"string false", `"false"`, false},
+		{"number 1", `1`, true},
+		{"number 0", `0`, false},
+		{"number non-zero", `42`, true},
 		{"bool true", `true`, true},
 		{"bool false", `false`, false},
 	}
@@ -130,6 +133,40 @@ func TestProject_UnmarshalJSON(t *testing.T) {
 	}
 	if int(project.OwnerID) != 42 {
 		t.Errorf("expected OwnerID=42, got %d", project.OwnerID)
+	}
+}
+
+func TestProject_UnmarshalJSON_NumericBool(t *testing.T) {
+	// Some Kanboard versions return numeric booleans instead of strings
+	jsonData := `{
+		"id": 1,
+		"name": "Test Project",
+		"description": "A test project",
+		"is_active": 1,
+		"token": "abc123",
+		"last_modified": 1609459200,
+		"is_public": 0,
+		"is_private": 1,
+		"owner_id": 42,
+		"priority_default": 2
+	}`
+
+	var project Project
+	if err := json.Unmarshal([]byte(jsonData), &project); err != nil {
+		t.Fatalf("unmarshal error: %v", err)
+	}
+
+	if int(project.ID) != 1 {
+		t.Errorf("expected ID=1, got %d", project.ID)
+	}
+	if !bool(project.IsActive) {
+		t.Error("expected IsActive=true")
+	}
+	if bool(project.IsPublic) {
+		t.Error("expected IsPublic=false")
+	}
+	if !bool(project.IsPrivate) {
+		t.Error("expected IsPrivate=true")
 	}
 }
 

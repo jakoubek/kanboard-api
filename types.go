@@ -20,17 +20,26 @@ type StringBool bool
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (b *StringBool) UnmarshalJSON(data []byte) error {
+	// Try as string first (most common from Kanboard)
 	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		// Try as raw bool
-		var boolVal bool
-		if err := json.Unmarshal(data, &boolVal); err != nil {
-			return err
-		}
-		*b = StringBool(boolVal)
+	if err := json.Unmarshal(data, &s); err == nil {
+		*b = s == "1" || s == "true"
 		return nil
 	}
-	*b = s == "1" || s == "true"
+
+	// Try as number (some Kanboard versions return 0/1)
+	var n int
+	if err := json.Unmarshal(data, &n); err == nil {
+		*b = n != 0
+		return nil
+	}
+
+	// Try as raw bool
+	var boolVal bool
+	if err := json.Unmarshal(data, &boolVal); err != nil {
+		return err
+	}
+	*b = StringBool(boolVal)
 	return nil
 }
 
