@@ -163,3 +163,14 @@ func (t *TaskScope) HasTag(ctx context.Context, tag string) (bool, error) {
 
 	return false, nil
 }
+
+// GetComments returns all comments for this task.
+func (t *TaskScope) GetComments(ctx context.Context) ([]Comment, error) {
+	return t.client.GetAllComments(ctx, t.taskID)
+}
+
+// AddComment adds a comment to this task and returns the created comment.
+// The userID is the ID of the user creating the comment.
+func (t *TaskScope) AddComment(ctx context.Context, userID int, content string) (*Comment, error) {
+	return t.client.CreateComment(ctx, t.taskID, userID, content)
+}
