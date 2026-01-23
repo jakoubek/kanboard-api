@@ -38,8 +38,16 @@ func NewClient(baseURL string) *Client {
 }
 
 // WithAPIToken configures the client to use API token authentication.
+// Uses "jsonrpc" as the username for HTTP Basic Auth.
 func (c *Client) WithAPIToken(token string) *Client {
 	c.auth = &apiTokenAuth{token: token}
+	return c
+}
+
+// WithAPITokenUser configures the client to use API token authentication with a custom username.
+// If user is empty, "jsonrpc" will be used as the default.
+func (c *Client) WithAPITokenUser(token, user string) *Client {
+	c.auth = &apiTokenAuth{token: token, user: user}
 	return c
 }
 

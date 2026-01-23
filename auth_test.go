@@ -43,6 +43,77 @@ func TestAPITokenAuth_Apply(t *testing.T) {
 	}
 }
 
+func TestAPITokenAuth_CustomUser(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			t.Error("expected Basic Auth header")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if username != "custom-user" {
+			t.Errorf("expected username=custom-user, got %s", username)
+		}
+		if password != "my-api-token-12345" {
+			t.Errorf("expected password=my-api-token-12345, got %s", password)
+		}
+
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPITokenUser("my-api-token-12345", "custom-user")
+
+	var result bool
+	err := client.call(context.Background(), "getVersion", nil, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestAPITokenAuth_EmptyUserDefaultsToJsonrpc(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			t.Error("expected Basic Auth header")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		if username != "jsonrpc" {
+			t.Errorf("expected username=jsonrpc (default), got %s", username)
+		}
+		if password != "my-api-token-12345" {
+			t.Errorf("expected password=my-api-token-12345, got %s", password)
+		}
+
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Using WithAPITokenUser with empty user should default to "jsonrpc"
+	client := NewClient(server.URL).WithAPITokenUser("my-api-token-12345", "")
+
+	var result bool
+	err := client.call(context.Background(), "getVersion", nil, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestBasicAuth_Apply(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
@@ -124,6 +195,11 @@ func TestClient_FluentAuthConfiguration(t *testing.T) {
 	client3 := client.WithBasicAuth("user", "pass")
 	if client != client3 {
 		t.Error("WithBasicAuth should return the same client instance")
+	}
+
+	client4 := client.WithAPITokenUser("token", "custom-user")
+	if client != client4 {
+		t.Error("WithAPITokenUser should return the same client instance")
 	}
 }
 

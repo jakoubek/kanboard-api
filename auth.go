@@ -9,12 +9,17 @@ type Authenticator interface {
 
 // apiTokenAuth implements API token authentication.
 type apiTokenAuth struct {
+	user  string
 	token string
 }
 
-// Apply adds HTTP Basic Auth with username "jsonrpc" and the API token.
+// Apply adds HTTP Basic Auth with the configured user (or "jsonrpc" if empty) and the API token.
 func (a *apiTokenAuth) Apply(req *http.Request) {
-	req.SetBasicAuth("jsonrpc", a.token)
+	user := a.user
+	if user == "" {
+		user = "jsonrpc"
+	}
+	req.SetBasicAuth(user, a.token)
 }
 
 // basicAuth implements username/password authentication.
