@@ -2,6 +2,7 @@ package kanboard
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -181,6 +182,136 @@ func TestAuthenticator_Interface(t *testing.T) {
 	// Verify both types implement Authenticator interface
 	var _ Authenticator = &apiTokenAuth{}
 	var _ Authenticator = &basicAuth{}
+}
+
+func TestAPITokenAuth_CustomHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Should NOT have standard Authorization header via BasicAuth
+		_, _, ok := r.BasicAuth()
+		if ok {
+			t.Error("did not expect Authorization header to be parsed as Basic Auth")
+		}
+
+		// Should have custom header
+		customAuth := r.Header.Get("X-API-Auth")
+		if customAuth == "" {
+			t.Error("expected X-API-Auth header")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Verify the custom header has the correct Basic auth value
+		expected := "Basic " + base64Encode("jsonrpc:my-api-token")
+		if customAuth != expected {
+			t.Errorf("expected X-API-Auth=%s, got %s", expected, customAuth)
+		}
+
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).
+		WithAuthHeader("X-API-Auth").
+		WithAPIToken("my-api-token")
+
+	var result bool
+	err := client.call(context.Background(), "getVersion", nil, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestBasicAuth_CustomHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Should NOT have standard Authorization header via BasicAuth
+		_, _, ok := r.BasicAuth()
+		if ok {
+			t.Error("did not expect Authorization header to be parsed as Basic Auth")
+		}
+
+		// Should have custom header
+		customAuth := r.Header.Get("X-Custom-Auth")
+		if customAuth == "" {
+			t.Error("expected X-Custom-Auth header")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Verify the custom header has the correct Basic auth value
+		expected := "Basic " + base64Encode("admin:secret")
+		if customAuth != expected {
+			t.Errorf("expected X-Custom-Auth=%s, got %s", expected, customAuth)
+		}
+
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).
+		WithAuthHeader("X-Custom-Auth").
+		WithBasicAuth("admin", "secret")
+
+	var result bool
+	err := client.call(context.Background(), "getVersion", nil, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCustomHeader_WithCustomUser(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		customAuth := r.Header.Get("X-API-Auth")
+		if customAuth == "" {
+			t.Error("expected X-API-Auth header")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		// Verify the custom header uses the custom username
+		expected := "Basic " + base64Encode("custom-user:my-token")
+		if customAuth != expected {
+			t.Errorf("expected X-API-Auth=%s, got %s", expected, customAuth)
+		}
+
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).
+		WithAuthHeader("X-API-Auth").
+		WithAPITokenUser("my-token", "custom-user")
+
+	var result bool
+	err := client.call(context.Background(), "getVersion", nil, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// base64Encode is a test helper to generate expected auth values.
+func base64Encode(s string) string {
+	return base64.StdEncoding.EncodeToString([]byte(s))
 }
 
 func TestClient_FluentAuthConfiguration(t *testing.T) {

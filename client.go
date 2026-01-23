@@ -13,11 +13,12 @@ const DefaultTimeout = 30 * time.Second
 // Client is the Kanboard API client.
 // It is safe for concurrent use by multiple goroutines.
 type Client struct {
-	baseURL    string
-	endpoint   string
-	httpClient *http.Client
-	auth       Authenticator
-	logger     *slog.Logger
+	baseURL        string
+	endpoint       string
+	httpClient     *http.Client
+	auth           Authenticator
+	logger         *slog.Logger
+	authHeaderName string // custom auth header, empty = use "Authorization"
 }
 
 // NewClient creates a new Kanboard API client.
@@ -37,23 +38,32 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
+// WithAuthHeader configures a custom header name for authentication.
+// If not set, the standard "Authorization" header is used.
+// This must be called before configuring authentication (WithAPIToken, WithBasicAuth, etc.).
+// Example: WithAuthHeader("X-API-Auth")
+func (c *Client) WithAuthHeader(headerName string) *Client {
+	c.authHeaderName = headerName
+	return c
+}
+
 // WithAPIToken configures the client to use API token authentication.
 // Uses "jsonrpc" as the username for HTTP Basic Auth.
 func (c *Client) WithAPIToken(token string) *Client {
-	c.auth = &apiTokenAuth{token: token}
+	c.auth = &apiTokenAuth{token: token, headerName: c.authHeaderName}
 	return c
 }
 
 // WithAPITokenUser configures the client to use API token authentication with a custom username.
 // If user is empty, "jsonrpc" will be used as the default.
 func (c *Client) WithAPITokenUser(token, user string) *Client {
-	c.auth = &apiTokenAuth{token: token, user: user}
+	c.auth = &apiTokenAuth{token: token, user: user, headerName: c.authHeaderName}
 	return c
 }
 
 // WithBasicAuth configures the client to use username/password authentication.
 func (c *Client) WithBasicAuth(username, password string) *Client {
-	c.auth = &basicAuth{username: username, password: password}
+	c.auth = &basicAuth{username: username, password: password, headerName: c.authHeaderName}
 	return c
 }
 
