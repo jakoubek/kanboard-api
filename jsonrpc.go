@@ -60,6 +60,10 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	if c.logger != nil {
+		c.logger.Debug("JSON-RPC request", "method", method, "body", string(body))
+	}
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
@@ -90,6 +94,10 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if c.logger != nil {
+		c.logger.Debug("JSON-RPC response", "method", method, "body", string(respBody))
 	}
 
 	var rpcResp JSONRPCResponse
