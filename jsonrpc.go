@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync/atomic"
 )
 
@@ -77,6 +79,10 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
+		// Preserve specific errors that shouldn't be wrapped as connection failures
+		if errors.Is(err, ErrTooManyRedirects) {
+			return ErrTooManyRedirects
+		}
 		return fmt.Errorf("%w: %v", ErrConnectionFailed, err)
 	}
 	defer resp.Body.Close()
@@ -91,6 +97,12 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 		return fmt.Errorf("unexpected HTTP status: %d", resp.StatusCode)
 	}
 
+	// Check for HTML response (indicates redirect to login page or misconfiguration)
+	contentType := resp.Header.Get("Content-Type")
+	if strings.Contains(contentType, "text/html") {
+		return fmt.Errorf("%w: received HTML instead of JSON (possible redirect to login page)", ErrUnauthorized)
+	}
+
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
@@ -98,6 +110,19 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 
 	if c.logger != nil {
 		c.logger.Debug("JSON-RPC response", "method", method, "body", string(respBody))
+	}
+
+	// Check if response body is HTML (backup check if Content-Type header is wrong/missing)
+	if len(respBody) > 0 {
+		trimmed := bytes.TrimLeft(respBody, " \t\n\r")
+		if len(trimmed) > 0 && trimmed[0] == '<' {
+			// Response is HTML, not JSON - extract a preview for debugging
+			preview := string(respBody)
+			if len(preview) > 200 {
+				preview = preview[:200] + "..."
+			}
+			return fmt.Errorf("server returned HTML instead of JSON (possible auth error or server error): %s", preview)
+		}
 	}
 
 	var rpcResp JSONRPCResponse
