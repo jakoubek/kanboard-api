@@ -237,6 +237,8 @@ type TaskFile struct {
 	DateCreation Timestamp   `json:"date_creation"`
 	UserID       StringInt   `json:"user_id"`
 	Size         StringInt64 `json:"size"`
+	Username     string      `json:"username"`  // Only returned by getAllTaskFiles
+	UserName     string      `json:"user_name"` // Only returned by getAllTaskFiles
 }
 
 // Tag represents a Kanboard tag.

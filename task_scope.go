@@ -281,3 +281,23 @@ func (t *TaskScope) UploadFile(ctx context.Context, filename string, content []b
 	}
 	return t.client.CreateTaskFile(ctx, int(task.ProjectID), t.taskID, filename, content)
 }
+
+// GetFile returns a file's metadata by ID.
+func (t *TaskScope) GetFile(ctx context.Context, fileID int) (*TaskFile, error) {
+	return t.client.GetTaskFile(ctx, fileID)
+}
+
+// RemoveFile removes a file by ID.
+func (t *TaskScope) RemoveFile(ctx context.Context, fileID int) error {
+	return t.client.RemoveTaskFile(ctx, fileID)
+}
+
+// DownloadFile downloads a file's content by ID.
+func (t *TaskScope) DownloadFile(ctx context.Context, fileID int) ([]byte, error) {
+	return t.client.DownloadTaskFile(ctx, fileID)
+}
+
+// RemoveAllFiles removes all files from this task.
+func (t *TaskScope) RemoveAllFiles(ctx context.Context) error {
+	return t.client.RemoveAllTaskFiles(ctx, t.taskID)
+}

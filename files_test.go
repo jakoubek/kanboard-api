@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -320,5 +321,244 @@ func TestTaskScope_UploadFile(t *testing.T) {
 
 	if fileID != 10 {
 		t.Errorf("expected fileID=10, got %d", fileID)
+	}
+}
+
+func TestClient_GetTaskFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "getTaskFile" {
+			t.Errorf("expected method=getTaskFile, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["file_id"].(float64) != 5 {
+			t.Errorf("expected file_id=5, got %v", params["file_id"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`{"id": "5", "name": "document.pdf", "path": "files/5", "is_image": "0", "task_id": "42", "user_id": "1", "size": "1024"}`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	file, err := client.GetTaskFile(context.Background(), 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if int(file.ID) != 5 {
+		t.Errorf("expected id=5, got %d", file.ID)
+	}
+	if file.Name != "document.pdf" {
+		t.Errorf("expected name='document.pdf', got %s", file.Name)
+	}
+	if int(file.TaskID) != 42 {
+		t.Errorf("expected task_id=42, got %d", file.TaskID)
+	}
+}
+
+func TestClient_GetTaskFile_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`null`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	_, err := client.GetTaskFile(context.Background(), 999)
+	if err == nil {
+		t.Fatal("expected error for not found file")
+	}
+	if !errors.Is(err, ErrNotFound) {
+		t.Errorf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestClient_RemoveAllTaskFiles(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "removeAllTaskFiles" {
+			t.Errorf("expected method=removeAllTaskFiles, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["task_id"].(float64) != 42 {
+			t.Errorf("expected task_id=42, got %v", params["task_id"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.RemoveAllTaskFiles(context.Background(), 42)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_RemoveAllTaskFiles_Failure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`false`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.RemoveAllTaskFiles(context.Background(), 42)
+	if err == nil {
+		t.Fatal("expected error for failed delete")
+	}
+}
+
+func TestTaskScope_GetFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "getTaskFile" {
+			t.Errorf("expected method=getTaskFile, got %s", req.Method)
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`{"id": "5", "name": "file.txt", "task_id": "42", "is_image": "0"}`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	file, err := client.Task(42).GetFile(context.Background(), 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if int(file.ID) != 5 {
+		t.Errorf("expected id=5, got %d", file.ID)
+	}
+}
+
+func TestTaskScope_DownloadFile(t *testing.T) {
+	testContent := []byte("file content")
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "downloadTaskFile" {
+			t.Errorf("expected method=downloadTaskFile, got %s", req.Method)
+		}
+
+		encoded := base64.StdEncoding.EncodeToString(testContent)
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`"` + encoded + `"`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	content, err := client.Task(42).DownloadFile(context.Background(), 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if string(content) != string(testContent) {
+		t.Errorf("expected content='%s', got '%s'", testContent, content)
+	}
+}
+
+func TestTaskScope_RemoveFile(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "removeTaskFile" {
+			t.Errorf("expected method=removeTaskFile, got %s", req.Method)
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.Task(42).RemoveFile(context.Background(), 5)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTaskScope_RemoveAllFiles(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "removeAllTaskFiles" {
+			t.Errorf("expected method=removeAllTaskFiles, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["task_id"].(float64) != 42 {
+			t.Errorf("expected task_id=42, got %v", params["task_id"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`true`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	err := client.Task(42).RemoveAllFiles(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

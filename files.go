@@ -75,3 +75,35 @@ func (c *Client) RemoveTaskFile(ctx context.Context, fileID int) error {
 
 	return nil
 }
+
+// GetTaskFile returns a single file's metadata by its ID.
+func (c *Client) GetTaskFile(ctx context.Context, fileID int) (*TaskFile, error) {
+	params := map[string]int{"file_id": fileID}
+
+	var result *TaskFile
+	if err := c.call(ctx, "getTaskFile", params, &result); err != nil {
+		return nil, fmt.Errorf("getTaskFile: %w", err)
+	}
+
+	if result == nil {
+		return nil, fmt.Errorf("%w: file %d", ErrNotFound, fileID)
+	}
+
+	return result, nil
+}
+
+// RemoveAllTaskFiles removes all files attached to a task.
+func (c *Client) RemoveAllTaskFiles(ctx context.Context, taskID int) error {
+	params := map[string]int{"task_id": taskID}
+
+	var success bool
+	if err := c.call(ctx, "removeAllTaskFiles", params, &success); err != nil {
+		return fmt.Errorf("removeAllTaskFiles: %w", err)
+	}
+
+	if !success {
+		return fmt.Errorf("removeAllTaskFiles: delete failed")
+	}
+
+	return nil
+}
