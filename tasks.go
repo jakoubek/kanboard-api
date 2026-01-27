@@ -143,7 +143,15 @@ func (c *Client) MoveTaskPosition(ctx context.Context, projectID, taskID, column
 	}
 
 	if !success {
-		return fmt.Errorf("moveTaskPosition: failed to move task %d", taskID)
+		return &OperationFailedError{
+			Operation: fmt.Sprintf("moveTaskPosition(task=%d, column=%d, project=%d)", taskID, columnID, projectID),
+			Hints: []string{
+				"task may not exist",
+				"column may not belong to project",
+				"insufficient permissions",
+				"task may already be in target position",
+			},
+		}
 	}
 
 	return nil
@@ -162,7 +170,14 @@ func (c *Client) MoveTaskToProject(ctx context.Context, taskID, projectID int) e
 	}
 
 	if !success {
-		return fmt.Errorf("moveTaskToProject: failed to move task %d to project %d", taskID, projectID)
+		return &OperationFailedError{
+			Operation: fmt.Sprintf("moveTaskToProject(task=%d, project=%d)", taskID, projectID),
+			Hints: []string{
+				"task may not exist",
+				"target project may not exist",
+				"insufficient permissions",
+			},
+		}
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package kanboard
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -216,4 +217,72 @@ func TestErrorWrapping(t *testing.T) {
 	if wrappedTwice.Error() != "in board scope: getting task 42: task not found" {
 		t.Errorf("unexpected error message: %s", wrappedTwice.Error())
 	}
+}
+
+func TestOperationFailedError(t *testing.T) {
+	tests := []struct {
+		name           string
+		err            *OperationFailedError
+		expectedSubstr []string
+	}{
+		{
+			name: "with hints",
+			err: &OperationFailedError{
+				Operation: "moveTaskPosition(task=42, column=5, project=1)",
+				Hints:     []string{"task may not exist", "column may not belong to project"},
+			},
+			expectedSubstr: []string{
+				"moveTaskPosition",
+				"operation failed",
+				"possible causes",
+				"task may not exist",
+				"column may not belong to project",
+			},
+		},
+		{
+			name: "without hints",
+			err: &OperationFailedError{
+				Operation: "someOperation",
+				Hints:     nil,
+			},
+			expectedSubstr: []string{"someOperation", "operation failed"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			errMsg := tt.err.Error()
+			for _, substr := range tt.expectedSubstr {
+				if !containsSubstr(errMsg, substr) {
+					t.Errorf("error message %q should contain %q", errMsg, substr)
+				}
+			}
+		})
+	}
+}
+
+func TestIsOperationFailed(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{"OperationFailedError", &OperationFailedError{Operation: "test"}, true},
+		{"wrapped OperationFailedError", fmt.Errorf("call failed: %w", &OperationFailedError{Operation: "test"}), true},
+		{"ErrUnauthorized", ErrUnauthorized, false},
+		{"generic error", errors.New("some error"), false},
+		{"nil", nil, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsOperationFailed(tt.err); got != tt.expected {
+				t.Errorf("IsOperationFailed(%v) = %v, want %v", tt.err, got, tt.expected)
+			}
+		})
+	}
+}
+
+func containsSubstr(s, substr string) bool {
+	return strings.Contains(s, substr)
 }

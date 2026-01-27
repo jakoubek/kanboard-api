@@ -82,6 +82,26 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("Kanboard API error (code %d): %s", e.Code, e.Message)
 }
 
+// OperationFailedError represents an API operation that returned false without details.
+// The Kanboard API often returns only true/false without explaining why an operation failed.
+type OperationFailedError struct {
+	Operation string
+	Hints     []string
+}
+
+// Error implements the error interface.
+func (e *OperationFailedError) Error() string {
+	msg := fmt.Sprintf("%s: operation failed", e.Operation)
+	if len(e.Hints) > 0 {
+		msg += " (possible causes: " + e.Hints[0]
+		for _, hint := range e.Hints[1:] {
+			msg += ", " + hint
+		}
+		msg += ")"
+	}
+	return msg
+}
+
 // IsNotFound returns true if the error indicates a resource was not found.
 func IsNotFound(err error) bool {
 	return errors.Is(err, ErrNotFound) ||
@@ -101,4 +121,10 @@ func IsUnauthorized(err error) bool {
 func IsAPIError(err error) bool {
 	var apiErr *APIError
 	return errors.As(err, &apiErr)
+}
+
+// IsOperationFailed returns true if the error is an OperationFailedError.
+func IsOperationFailed(err error) bool {
+	var opErr *OperationFailedError
+	return errors.As(err, &opErr)
 }

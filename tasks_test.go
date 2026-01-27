@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -638,6 +639,20 @@ func TestClient_MoveTaskPosition_Failure(t *testing.T) {
 	err := client.MoveTaskPosition(context.Background(), 1, 42, 999, 1, 0)
 	if err == nil {
 		t.Fatal("expected error for failed move")
+	}
+
+	// Verify it's an OperationFailedError with helpful hints
+	if !IsOperationFailed(err) {
+		t.Errorf("expected OperationFailedError, got %T", err)
+	}
+
+	// Error message should contain actionable hints
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "moveTaskPosition") {
+		t.Error("error should mention operation name")
+	}
+	if !strings.Contains(errMsg, "possible causes") {
+		t.Error("error should include possible causes")
 	}
 }
 
