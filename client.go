@@ -29,13 +29,17 @@ func NewClient(baseURL string) *Client {
 	// Ensure no trailing slash
 	baseURL = strings.TrimSuffix(baseURL, "/")
 
-	return &Client{
+	c := &Client{
 		baseURL:  baseURL,
 		endpoint: baseURL + "/jsonrpc.php",
-		httpClient: &http.Client{
-			Timeout: DefaultTimeout,
-		},
 	}
+
+	c.httpClient = &http.Client{
+		Timeout:       DefaultTimeout,
+		CheckRedirect: c.redirectBehavior,
+	}
+
+	return c
 }
 
 // WithAuthHeader configures a custom header name for authentication.
@@ -68,7 +72,9 @@ func (c *Client) WithBasicAuth(username, password string) *Client {
 }
 
 // WithHTTPClient sets a custom HTTP client.
-// This replaces the default client entirely, including any timeout settings.
+// This replaces the default client entirely, including timeout and redirect settings.
+// Note: The custom client's CheckRedirect handler will be used instead of the
+// built-in redirect handler that preserves authentication headers.
 func (c *Client) WithHTTPClient(client *http.Client) *Client {
 	c.httpClient = client
 	return c
@@ -78,8 +84,9 @@ func (c *Client) WithHTTPClient(client *http.Client) *Client {
 // This creates a new HTTP client with the specified timeout.
 func (c *Client) WithTimeout(timeout time.Duration) *Client {
 	c.httpClient = &http.Client{
-		Timeout:   timeout,
-		Transport: c.httpClient.Transport,
+		Timeout:       timeout,
+		Transport:     c.httpClient.Transport,
+		CheckRedirect: c.redirectBehavior,
 	}
 	return c
 }

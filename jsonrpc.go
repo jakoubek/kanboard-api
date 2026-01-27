@@ -7,9 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
 	"strings"
-	"sync/atomic"
 )
 
 // JSONRPCRequest represents a JSON-RPC 2.0 request.
@@ -39,12 +39,9 @@ func (e *JSONRPCError) Error() string {
 	return fmt.Sprintf("JSON-RPC error (code %d): %s", e.Code, e.Message)
 }
 
-// requestIDCounter provides thread-safe request ID generation.
-var requestIDCounter atomic.Int64
-
-// nextRequestID returns the next request ID in a thread-safe manner.
+// nextRequestID returns a random request ID.
 func nextRequestID() int64 {
-	return requestIDCounter.Add(1)
+	return rand.Int64()
 }
 
 // call sends a JSON-RPC request and parses the response.

@@ -12,6 +12,9 @@ var (
 
 	// ErrTimeout indicates a request timed out.
 	ErrTimeout = errors.New("request timed out")
+
+	// ErrTooManyRedirects indicates the server returned too many redirects.
+	ErrTooManyRedirects = errors.New("too many redirects")
 )
 
 // Authentication errors

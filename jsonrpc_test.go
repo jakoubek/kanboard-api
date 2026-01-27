@@ -113,17 +113,23 @@ func TestJSONRPCError_Error(t *testing.T) {
 	}
 }
 
-func TestNextRequestID_Increments(t *testing.T) {
-	// Get the current counter value
-	initial := nextRequestID()
+func TestNextRequestID_RandomValues(t *testing.T) {
+	// Generate several IDs and verify they are varied (not sequential)
+	ids := make([]int64, 10)
+	for i := range ids {
+		ids[i] = nextRequestID()
+	}
 
-	// Verify increments
-	for i := int64(1); i <= 5; i++ {
-		got := nextRequestID()
-		expected := initial + i
-		if got != expected {
-			t.Errorf("expected %d, got %d", expected, got)
+	// Check that not all IDs are sequential (would indicate non-random behavior)
+	sequential := true
+	for i := 1; i < len(ids); i++ {
+		if ids[i] != ids[i-1]+1 {
+			sequential = false
+			break
 		}
+	}
+	if sequential {
+		t.Error("IDs appear to be sequential, expected random values")
 	}
 }
 
