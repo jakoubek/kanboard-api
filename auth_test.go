@@ -200,8 +200,8 @@ func TestAPITokenAuth_CustomHeader(t *testing.T) {
 			return
 		}
 
-		// Verify the custom header has the correct Basic auth value
-		expected := "Basic " + base64Encode("jsonrpc:my-api-token")
+		// Verify the custom header has raw base64 value (no "Basic " prefix)
+		expected := base64Encode("jsonrpc:my-api-token")
 		if customAuth != expected {
 			t.Errorf("expected X-API-Auth=%s, got %s", expected, customAuth)
 		}
@@ -244,8 +244,8 @@ func TestBasicAuth_CustomHeader(t *testing.T) {
 			return
 		}
 
-		// Verify the custom header has the correct Basic auth value
-		expected := "Basic " + base64Encode("admin:secret")
+		// Verify the custom header has raw base64 value (no "Basic " prefix)
+		expected := base64Encode("admin:secret")
 		if customAuth != expected {
 			t.Errorf("expected X-Custom-Auth=%s, got %s", expected, customAuth)
 		}
@@ -281,8 +281,8 @@ func TestCustomHeader_WithCustomUser(t *testing.T) {
 			return
 		}
 
-		// Verify the custom header uses the custom username
-		expected := "Basic " + base64Encode("custom-user:my-token")
+		// Verify the custom header uses raw base64 value with custom username
+		expected := base64Encode("custom-user:my-token")
 		if customAuth != expected {
 			t.Errorf("expected X-API-Auth=%s, got %s", expected, customAuth)
 		}

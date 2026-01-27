@@ -24,7 +24,7 @@ func (a *apiTokenAuth) Apply(req *http.Request) {
 		user = "jsonrpc"
 	}
 	if a.headerName != "" {
-		req.Header.Set(a.headerName, "Basic "+basicAuthValue(user, a.token))
+		req.Header.Set(a.headerName, basicAuthValue(user, a.token))
 	} else {
 		req.SetBasicAuth(user, a.token)
 	}
@@ -40,7 +40,7 @@ type basicAuth struct {
 // Apply adds HTTP Basic Auth with username and password.
 func (a *basicAuth) Apply(req *http.Request) {
 	if a.headerName != "" {
-		req.Header.Set(a.headerName, "Basic "+basicAuthValue(a.username, a.password))
+		req.Header.Set(a.headerName, basicAuthValue(a.username, a.password))
 	} else {
 		req.SetBasicAuth(a.username, a.password)
 	}
