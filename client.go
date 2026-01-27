@@ -29,9 +29,15 @@ func NewClient(baseURL string) *Client {
 	// Ensure no trailing slash
 	baseURL = strings.TrimSuffix(baseURL, "/")
 
+	// Handle URLs that already include /jsonrpc.php
+	endpoint := baseURL
+	if !strings.HasSuffix(baseURL, "/jsonrpc.php") {
+		endpoint = baseURL + "/jsonrpc.php"
+	}
+
 	c := &Client{
 		baseURL:  baseURL,
-		endpoint: baseURL + "/jsonrpc.php",
+		endpoint: endpoint,
 	}
 
 	c.httpClient = &http.Client{

@@ -44,6 +44,22 @@ func TestNewClient_Subdirectory(t *testing.T) {
 	}
 }
 
+func TestNewClient_WithJsonrpcPhpSuffix(t *testing.T) {
+	client := NewClient("https://example.com/jsonrpc.php")
+
+	if client.endpoint != "https://example.com/jsonrpc.php" {
+		t.Errorf("expected endpoint='https://example.com/jsonrpc.php', got %s", client.endpoint)
+	}
+}
+
+func TestNewClient_SubdirectoryWithJsonrpcPhpSuffix(t *testing.T) {
+	client := NewClient("https://example.com/kanboard/jsonrpc.php")
+
+	if client.endpoint != "https://example.com/kanboard/jsonrpc.php" {
+		t.Errorf("expected endpoint='https://example.com/kanboard/jsonrpc.php', got %s", client.endpoint)
+	}
+}
+
 func TestDefaultTimeout(t *testing.T) {
 	if DefaultTimeout != 30*time.Second {
 		t.Errorf("expected DefaultTimeout=30s, got %v", DefaultTimeout)
