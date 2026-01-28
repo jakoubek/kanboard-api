@@ -165,6 +165,7 @@ type Task struct {
 	DateCompleted       Timestamp  `json:"date_completed"`
 	DateStarted         Timestamp  `json:"date_started"`
 	DateDue             Timestamp  `json:"date_due"`
+	DateMoved           Timestamp  `json:"date_moved"`
 	ColorID             string     `json:"color_id"`
 	ProjectID           StringInt  `json:"project_id"`
 	ColumnID            StringInt  `json:"column_id"`
