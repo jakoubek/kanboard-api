@@ -43,6 +43,16 @@ func (b *BoardScope) CreateTask(ctx context.Context, req CreateTaskRequest) (*Ta
 	return b.client.CreateTask(ctx, req)
 }
 
+// CreateCategory creates a new category in the project and returns its ID.
+func (b *BoardScope) CreateCategory(ctx context.Context, name string, colorID string) (int, error) {
+	return b.client.CreateCategory(ctx, b.projectID, name, colorID)
+}
+
+// GetCategoryByName returns a category by name within the project.
+func (b *BoardScope) GetCategoryByName(ctx context.Context, name string) (*Category, error) {
+	return b.client.GetCategoryByName(ctx, b.projectID, name)
+}
+
 // CreateTaskFromParams creates a new task in the project using TaskParams.
 // This provides a fluent interface for task creation.
 func (b *BoardScope) CreateTaskFromParams(ctx context.Context, params *TaskParams) (*Task, error) {
