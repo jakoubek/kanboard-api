@@ -1,5 +1,10 @@
 # kanboard-api
 
+[![Mirror on GitHub](https://img.shields.io/badge/mirror-GitHub-blue)](https://github.com/jakoubek/kanboard-api)
+[![Go Reference](https://pkg.go.dev/badge/code.beautifulmachines.dev/jakoubek/kanboard-api.svg)](https://pkg.go.dev/code.beautifulmachines.dev/jakoubek/kanboard-api)
+[![Go Report Card](https://goreportcard.com/badge/code.beautifulmachines.dev/jakoubek/kanboard-api)](https://goreportcard.com/report/code.beautifulmachines.dev/jakoubek/kanboard-api)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Go library for the [Kanboard](https://kanboard.org/) JSON-RPC API. Provides a fluent, chainable API for integrating Kanboard into Go applications.
 
 ## Installation
