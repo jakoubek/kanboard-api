@@ -47,6 +47,12 @@ func nextRequestID() int64 {
 // call sends a JSON-RPC request and parses the response.
 // The result parameter should be a pointer to the expected result type.
 func (c *Client) call(ctx context.Context, method string, params interface{}, result interface{}) error {
+	if method != "getTimezone" {
+		if err := c.ensureTimezone(ctx); err != nil {
+			return fmt.Errorf("failed to load timezone: %w", err)
+		}
+	}
+
 	req := JSONRPCRequest{
 		JSONRPC: "2.0",
 		Method:  method,
@@ -137,6 +143,9 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 	if result != nil && rpcResp.Result != nil {
 		if err := json.Unmarshal(rpcResp.Result, result); err != nil {
 			return fmt.Errorf("failed to unmarshal result: %w", err)
+		}
+		if c.tzEnabled && c.timezone != nil {
+			c.convertTimestamps(result)
 		}
 	}
 

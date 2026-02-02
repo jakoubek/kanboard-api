@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,9 @@ type Client struct {
 	auth           Authenticator
 	logger         *slog.Logger
 	authHeaderName string // custom auth header, empty = use "Authorization"
+	timezone       *time.Location
+	tzOnce         sync.Once
+	tzEnabled      bool
 }
 
 // NewClient creates a new Kanboard API client.
@@ -101,5 +105,13 @@ func (c *Client) WithTimeout(timeout time.Duration) *Client {
 // If set, the client will log request/response details at debug level.
 func (c *Client) WithLogger(logger *slog.Logger) *Client {
 	c.logger = logger
+	return c
+}
+
+// WithTimezone enables automatic timestamp conversion. On the first API call,
+// the client fetches the server's timezone via getTimezone and converts all
+// Timestamp fields in responses to that timezone.
+func (c *Client) WithTimezone() *Client {
+	c.tzEnabled = true
 	return c
 }
