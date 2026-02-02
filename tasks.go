@@ -24,6 +24,23 @@ func (c *Client) GetTask(ctx context.Context, taskID int) (*Task, error) {
 	return result, nil
 }
 
+// GetTaskByReference returns a task by its external reference within a project.
+// Returns ErrTaskNotFound if no task matches the reference.
+func (c *Client) GetTaskByReference(ctx context.Context, projectID int, reference string) (*Task, error) {
+	params := map[string]any{"project_id": projectID, "reference": reference}
+
+	var result *Task
+	if err := c.call(ctx, "getTaskByReference", params, &result); err != nil {
+		return nil, fmt.Errorf("getTaskByReference: %w", err)
+	}
+
+	if result == nil {
+		return nil, fmt.Errorf("%w: reference %q in project %d", ErrTaskNotFound, reference, projectID)
+	}
+
+	return result, nil
+}
+
 // GetAllTasks returns all tasks for a project with the specified status.
 func (c *Client) GetAllTasks(ctx context.Context, projectID int, status TaskStatus) ([]Task, error) {
 	params := map[string]int{

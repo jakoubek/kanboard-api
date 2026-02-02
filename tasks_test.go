@@ -77,6 +77,73 @@ func TestClient_GetTask_NotFound(t *testing.T) {
 	}
 }
 
+func TestClient_GetTaskByReference(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		if req.Method != "getTaskByReference" {
+			t.Errorf("expected method=getTaskByReference, got %s", req.Method)
+		}
+
+		params := req.Params.(map[string]any)
+		if params["project_id"].(float64) != 1 {
+			t.Errorf("expected project_id=1, got %v", params["project_id"])
+		}
+		if params["reference"] != "EXT-123" {
+			t.Errorf("expected reference='EXT-123', got %v", params["reference"])
+		}
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`{"id": "42", "title": "Test Task", "project_id": "1", "column_id": "1", "is_active": "1", "reference": "EXT-123"}`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	task, err := client.GetTaskByReference(context.Background(), 1, "EXT-123")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if int(task.ID) != 42 {
+		t.Errorf("expected ID=42, got %d", task.ID)
+	}
+	if task.Title != "Test Task" {
+		t.Errorf("expected title='Test Task', got %s", task.Title)
+	}
+}
+
+func TestClient_GetTaskByReference_NotFound(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`null`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	_, err := client.GetTaskByReference(context.Background(), 1, "NONEXISTENT")
+	if err == nil {
+		t.Fatal("expected error for non-existent task")
+	}
+
+	if !errors.Is(err, ErrTaskNotFound) {
+		t.Errorf("expected ErrTaskNotFound, got %v", err)
+	}
+}
+
 func TestClient_GetAllTasks(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req JSONRPCRequest
