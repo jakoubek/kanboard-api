@@ -49,6 +49,42 @@ func TestClient_GetTask(t *testing.T) {
 	if !bool(task.IsActive) {
 		t.Error("expected task to be active")
 	}
+	// Missing time fields must decode to 0 (backward compatibility).
+	if float64(task.TimeEstimated) != 0 {
+		t.Errorf("expected TimeEstimated=0 for missing field, got %v", task.TimeEstimated)
+	}
+	if float64(task.TimeSpent) != 0 {
+		t.Errorf("expected TimeSpent=0 for missing field, got %v", task.TimeSpent)
+	}
+}
+
+func TestClient_GetTask_TimeFields(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`{"id": "42", "title": "Test Task", "project_id": "1", "column_id": "1", "is_active": "1", "time_estimated": "8", "time_spent": "2.5"}`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	task, err := client.GetTask(context.Background(), 42)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if float64(task.TimeEstimated) != 8 {
+		t.Errorf("expected TimeEstimated=8, got %v", task.TimeEstimated)
+	}
+	if float64(task.TimeSpent) != 2.5 {
+		t.Errorf("expected TimeSpent=2.5, got %v", task.TimeSpent)
+	}
 }
 
 func TestClient_GetTask_NotFound(t *testing.T) {

@@ -97,6 +97,43 @@ func TestStringInt64_UnmarshalJSON(t *testing.T) {
 	}
 }
 
+func TestStringFloat_UnmarshalJSON(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected float64
+		wantErr  bool
+	}{
+		{"string integer", `"8"`, 8, false},
+		{"string decimal", `"2.5"`, 2.5, false},
+		{"string zero decimal", `"0.00"`, 0, false},
+		{"empty string", `""`, 0, false},
+		{"number integer", `8`, 8, false},
+		{"number decimal", `2.5`, 2.5, false},
+		{"null", `null`, 0, false},
+		{"invalid string", `"abc"`, 0, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var f StringFloat
+			err := json.Unmarshal([]byte(tt.input), &f)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got none (value %v)", f)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unmarshal error: %v", err)
+			}
+			if float64(f) != tt.expected {
+				t.Errorf("expected %v, got %v", tt.expected, f)
+			}
+		})
+	}
+}
+
 func TestIntOrFalse_UnmarshalJSON(t *testing.T) {
 	tests := []struct {
 		name     string

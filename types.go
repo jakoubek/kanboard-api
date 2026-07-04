@@ -106,6 +106,33 @@ func (i *StringInt64) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// StringFloat is a float64 that can be unmarshaled from a JSON string or number.
+type StringFloat float64
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (f *StringFloat) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		// Try as raw number
+		var num float64
+		if err := json.Unmarshal(data, &num); err != nil {
+			return err
+		}
+		*f = StringFloat(num)
+		return nil
+	}
+	if s == "" {
+		*f = 0
+		return nil
+	}
+	val, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return err
+	}
+	*f = StringFloat(val)
+	return nil
+}
+
 // IntOrFalse is an int that can be unmarshaled from a JSON int or false.
 // Kanboard API returns false on failure, int (ID) on success for create operations.
 type IntOrFalse int
@@ -157,34 +184,36 @@ type Project struct {
 
 // Task represents a Kanboard task.
 type Task struct {
-	ID                  StringInt  `json:"id"`
-	Title               string     `json:"title"`
-	Description         string     `json:"description"`
-	DateCreation        Timestamp  `json:"date_creation"`
-	DateModification    Timestamp  `json:"date_modification"`
-	DateCompleted       Timestamp  `json:"date_completed"`
-	DateStarted         Timestamp  `json:"date_started"`
-	DateDue             Timestamp  `json:"date_due"`
-	DateMoved           Timestamp  `json:"date_moved"`
-	ColorID             string     `json:"color_id"`
-	ProjectID           StringInt  `json:"project_id"`
-	ColumnID            StringInt  `json:"column_id"`
-	OwnerID             StringInt  `json:"owner_id"`
-	CreatorID           StringInt  `json:"creator_id"`
-	Position            StringInt  `json:"position"`
-	IsActive            StringBool `json:"is_active"`
-	Score               StringInt  `json:"score"`
-	CategoryID          StringInt  `json:"category_id"`
-	SwimlaneID          StringInt  `json:"swimlane_id"`
-	Priority            StringInt  `json:"priority"`
-	Reference           string     `json:"reference"`
-	RecurrenceStatus    StringInt  `json:"recurrence_status"`
-	RecurrenceTrigger   StringInt  `json:"recurrence_trigger"`
-	RecurrenceFactor    StringInt  `json:"recurrence_factor"`
-	RecurrenceTimeframe StringInt  `json:"recurrence_timeframe"`
-	RecurrenceBasedate  StringInt  `json:"recurrence_basedate"`
-	RecurrenceParent    StringInt  `json:"recurrence_parent"`
-	RecurrenceChild     StringInt  `json:"recurrence_child"`
+	ID                  StringInt   `json:"id"`
+	Title               string      `json:"title"`
+	Description         string      `json:"description"`
+	DateCreation        Timestamp   `json:"date_creation"`
+	DateModification    Timestamp   `json:"date_modification"`
+	DateCompleted       Timestamp   `json:"date_completed"`
+	DateStarted         Timestamp   `json:"date_started"`
+	DateDue             Timestamp   `json:"date_due"`
+	DateMoved           Timestamp   `json:"date_moved"`
+	ColorID             string      `json:"color_id"`
+	ProjectID           StringInt   `json:"project_id"`
+	ColumnID            StringInt   `json:"column_id"`
+	OwnerID             StringInt   `json:"owner_id"`
+	CreatorID           StringInt   `json:"creator_id"`
+	Position            StringInt   `json:"position"`
+	IsActive            StringBool  `json:"is_active"`
+	Score               StringInt   `json:"score"`
+	TimeEstimated       StringFloat `json:"time_estimated"`
+	TimeSpent           StringFloat `json:"time_spent"`
+	CategoryID          StringInt   `json:"category_id"`
+	SwimlaneID          StringInt   `json:"swimlane_id"`
+	Priority            StringInt   `json:"priority"`
+	Reference           string      `json:"reference"`
+	RecurrenceStatus    StringInt   `json:"recurrence_status"`
+	RecurrenceTrigger   StringInt   `json:"recurrence_trigger"`
+	RecurrenceFactor    StringInt   `json:"recurrence_factor"`
+	RecurrenceTimeframe StringInt   `json:"recurrence_timeframe"`
+	RecurrenceBasedate  StringInt   `json:"recurrence_basedate"`
+	RecurrenceParent    StringInt   `json:"recurrence_parent"`
+	RecurrenceChild     StringInt   `json:"recurrence_child"`
 }
 
 // Column represents a Kanboard column.
