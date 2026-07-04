@@ -1,40 +1,66 @@
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+## Plans
 
-## Quick Reference
+- Make the plan extremely concise. Sacrifice grammar for the sake of concision.
+- At the end of each plan, give me a list of unresolved questions to answer, if any.
 
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
-```
+## Main Workflow
 
-## Landing the Plane (Session Completion)
+The operator drives the work directly via prompts — there is no issue tracker.
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+### 1. Task
 
-**MANDATORY WORKFLOW:**
+The operator assigns a piece of work in the conversation. Use plan mode to lay out
+the approach, then implement the plan.
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+### 2. Operator tests manually
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+After the implementation is finished, the operator tests the solution themselves.
 
+### 3. Commit
+
+Only **after** the operator's manual test do you create the commit(s). Implementing
+and committing are separate steps — do not commit while still implementing.
+
+## Commits
+
+This project follows the [Conventional Commits](https://www.conventionalcommits.org)
+specification. Use the `/commit` command to create commits.
+
+- **Types**: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `perf:`, `test:`,
+  `build:`, `ci:`, `chore:`, `revert:`. Optional scope, e.g. `feat(auth):`.
+  Breaking changes get a `!`, e.g. `feat!:`.
+- **English** commit messages.
+- **One commit per concern.** Do not bundle unrelated changes. If a single commit
+  message would need an "and" or a list of unrelated bullet points, split it —
+  at file granularity (`git add <paths>`) or hunk granularity (`git add -p`).
+- Only when all changes belong to one coherent topic is a single commit correct.
+- Never add co-authors.
+
+## CHANGELOG
+
+Every user-facing change gets a CHANGELOG entry. Maintenance is done with the
+`/update-changelog` command.
+
+- Format: [Keep a Changelog](https://keepachangelog.com/) + Semantic Versioning.
+- **English** entries (even when commit messages are German), one line per change,
+  no commit hashes.
+- Categorization:
+  - `feat:` → **Added**
+  - `fix:` → **Fixed**
+  - `refactor:` / `perf:` → **Changed**
+  - `BREAKING` → **Changed** (mark as BREAKING)
+  - `remove` / `deprecate` → **Removed**
+  - Skip `chore:`, `ci:`, `test:`, `style:` unless user-facing.
+
+## Release / Versioning
+
+Semantic Versioning with a `v` prefix (current: `v1.5.0`). Tags are created with
+the `/tag-version` command; the changelog is updated with `/update-changelog`.
+
+Version bump rule (Conventional Commits since the last tag):
+
+- `BREAKING CHANGE` or a type ending with `!` (e.g. `feat!:`) → **MAJOR**
+- `feat:` / `feat(` present → **MINOR**
+- otherwise (`fix`, `docs`, `refactor`, `perf`, `style`, …) → **PATCH**
