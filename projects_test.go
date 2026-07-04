@@ -139,6 +139,33 @@ func TestClient_GetProjectByID_NotFound(t *testing.T) {
 	}
 }
 
+func TestClient_GetProjectByID_False(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		// Kanboard returns false (not null) for non-existent projects
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`false`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	_, err := client.GetProjectByID(context.Background(), 999)
+	if err == nil {
+		t.Fatal("expected error for non-existent project")
+	}
+
+	if !errors.Is(err, ErrProjectNotFound) {
+		t.Errorf("expected ErrProjectNotFound, got %v", err)
+	}
+}
+
 func TestClient_GetProjectByName(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req JSONRPCRequest
@@ -183,6 +210,33 @@ func TestClient_GetProjectByName_NotFound(t *testing.T) {
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result:  json.RawMessage(`null`),
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL).WithAPIToken("test-token")
+
+	_, err := client.GetProjectByName(context.Background(), "Non-Existent")
+	if err == nil {
+		t.Fatal("expected error for non-existent project")
+	}
+
+	if !errors.Is(err, ErrProjectNotFound) {
+		t.Errorf("expected ErrProjectNotFound, got %v", err)
+	}
+}
+
+func TestClient_GetProjectByName_False(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req JSONRPCRequest
+		json.NewDecoder(r.Body).Decode(&req)
+
+		// Kanboard returns false (not null) for non-existent projects
+		resp := JSONRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  json.RawMessage(`false`),
 		}
 		json.NewEncoder(w).Encode(resp)
 	}))

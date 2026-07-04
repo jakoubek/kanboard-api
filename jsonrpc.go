@@ -151,3 +151,36 @@ func (c *Client) call(ctx context.Context, method string, params interface{}, re
 
 	return nil
 }
+
+// callObjectOrFalse behaves like call but tolerates Kanboard returning the
+// literal false (or null) instead of an object. Several getters — e.g.
+// getProjectById and getProjectByName — signal "not found" that way, which
+// would otherwise fail unmarshaling into a struct. On such a result it reports
+// found=false and leaves result untouched; otherwise it decodes into result
+// (including timezone conversion) exactly like call.
+func (c *Client) callObjectOrFalse(ctx context.Context, method string, params, result any) (found bool, err error) {
+	var raw json.RawMessage
+	if err := c.call(ctx, method, params, &raw); err != nil {
+		return false, err
+	}
+
+	if isJSONFalseOrNull(raw) {
+		return false, nil
+	}
+
+	if err := json.Unmarshal(raw, result); err != nil {
+		return false, fmt.Errorf("failed to unmarshal result: %w", err)
+	}
+	if c.tzEnabled && c.timezone != nil {
+		c.convertTimestamps(result)
+	}
+
+	return true, nil
+}
+
+// isJSONFalseOrNull reports whether raw is empty, the JSON null, or the JSON
+// literal false.
+func isJSONFalseOrNull(raw json.RawMessage) bool {
+	t := bytes.TrimSpace(raw)
+	return len(t) == 0 || bytes.Equal(t, []byte("null")) || bytes.Equal(t, []byte("false"))
+}

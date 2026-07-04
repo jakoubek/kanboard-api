@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `GetProjectByName` and `GetProjectByID` now return `ErrProjectNotFound` when
+  Kanboard reports "not found" as the literal `false` (not just `null`), instead
+  of failing with a JSON unmarshal error.
+
 ## [v1.6.0] - 2026-07-04
 
 ### Added

@@ -19,16 +19,17 @@ func (c *Client) GetAllProjects(ctx context.Context) ([]Project, error) {
 func (c *Client) GetProjectByID(ctx context.Context, projectID int) (*Project, error) {
 	params := map[string]int{"project_id": projectID}
 
-	var result *Project
-	if err := c.call(ctx, "getProjectById", params, &result); err != nil {
+	var result Project
+	found, err := c.callObjectOrFalse(ctx, "getProjectById", params, &result)
+	if err != nil {
 		return nil, fmt.Errorf("getProjectById: %w", err)
 	}
 
-	if result == nil {
+	if !found {
 		return nil, fmt.Errorf("%w: project %d", ErrProjectNotFound, projectID)
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 // GetProjectByName returns a project by its name.
@@ -36,14 +37,15 @@ func (c *Client) GetProjectByID(ctx context.Context, projectID int) (*Project, e
 func (c *Client) GetProjectByName(ctx context.Context, name string) (*Project, error) {
 	params := map[string]string{"name": name}
 
-	var result *Project
-	if err := c.call(ctx, "getProjectByName", params, &result); err != nil {
+	var result Project
+	found, err := c.callObjectOrFalse(ctx, "getProjectByName", params, &result)
+	if err != nil {
 		return nil, fmt.Errorf("getProjectByName: %w", err)
 	}
 
-	if result == nil {
+	if !found {
 		return nil, fmt.Errorf("%w: project %q", ErrProjectNotFound, name)
 	}
 
-	return result, nil
+	return &result, nil
 }
