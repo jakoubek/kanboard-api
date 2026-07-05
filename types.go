@@ -247,12 +247,12 @@ type Comment struct {
 	AvatarPath   string    `json:"avatar_path"`
 }
 
-// TaskLink represents a link between two tasks.
+// TaskLink represents a link between two tasks. Kanboard's getAllTaskLinks returns
+// the linked task's ID in the "task_id" field (not "opposite_task_id" or "link_id",
+// which don't exist in the real API response).
 type TaskLink struct {
 	ID             StringInt `json:"id"`
-	LinkID         StringInt `json:"link_id"`
-	TaskID         StringInt `json:"task_id"`
-	OppositeTaskID StringInt `json:"opposite_task_id"`
+	OppositeTaskID StringInt `json:"task_id"`
 	Label          string    `json:"label"`
 	Title          string    `json:"title"`
 }

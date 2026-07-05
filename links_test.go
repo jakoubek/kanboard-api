@@ -26,8 +26,8 @@ func TestClient_GetAllTaskLinks(t *testing.T) {
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result: json.RawMessage(`[
-				{"id": "1", "link_id": "2", "task_id": "42", "opposite_task_id": "100", "label": "blocks", "title": "Blocked Task"},
-				{"id": "2", "link_id": "3", "task_id": "42", "opposite_task_id": "101", "label": "is duplicated by", "title": "Duplicate Task"}
+				{"id": 1, "task_id": 100, "label": "blocks", "title": "Blocked Task", "is_active": 1, "project_id": 5},
+				{"id": 2, "task_id": 101, "label": "is duplicated by", "title": "Duplicate Task", "is_active": 1, "project_id": 5}
 			]`),
 		}
 		json.NewEncoder(w).Encode(resp)
@@ -211,7 +211,7 @@ func TestTaskScope_GetLinks(t *testing.T) {
 		resp := JSONRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
-			Result:  json.RawMessage(`[{"id": "1", "link_id": "2", "task_id": "42", "opposite_task_id": "100", "label": "blocks"}]`),
+			Result:  json.RawMessage(`[{"id": 1, "task_id": 100, "label": "blocks"}]`),
 		}
 		json.NewEncoder(w).Encode(resp)
 	}))

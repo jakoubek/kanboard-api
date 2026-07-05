@@ -361,13 +361,16 @@ func TestComment_UnmarshalJSON(t *testing.T) {
 }
 
 func TestTaskLink_UnmarshalJSON(t *testing.T) {
+	// Mirrors the real getAllTaskLinks response shape: the linked task's ID comes in
+	// "task_id" (not "opposite_task_id"), alongside denormalized fields this struct
+	// doesn't map, which must be tolerated.
 	jsonData := `{
-		"id": "1",
-		"link_id": "2",
-		"task_id": "42",
-		"opposite_task_id": "43",
+		"id": 1,
+		"task_id": 43,
 		"label": "blocks",
-		"title": "Related Task"
+		"title": "Related Task",
+		"is_active": 1,
+		"project_id": 5
 	}`
 
 	var link TaskLink
@@ -377,9 +380,6 @@ func TestTaskLink_UnmarshalJSON(t *testing.T) {
 
 	if int(link.ID) != 1 {
 		t.Errorf("expected ID=1, got %d", link.ID)
-	}
-	if int(link.TaskID) != 42 {
-		t.Errorf("expected TaskID=42, got %d", link.TaskID)
 	}
 	if int(link.OppositeTaskID) != 43 {
 		t.Errorf("expected OppositeTaskID=43, got %d", link.OppositeTaskID)
