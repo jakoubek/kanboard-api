@@ -58,8 +58,8 @@ func TestTaskParams_Chaining(t *testing.T) {
 	if *params.priority != 2 {
 		t.Errorf("expected priority=2, got %d", *params.priority)
 	}
-	if *params.dueDate != dueDate.Unix() {
-		t.Errorf("expected dueDate=%d, got %d", dueDate.Unix(), *params.dueDate)
+	if *params.dueDate != dueDate.Format(kanboardDateTimeFormat) {
+		t.Errorf("expected dueDate=%s, got %s", dueDate.Format(kanboardDateTimeFormat), *params.dueDate)
 	}
 	if len(params.tags) != 2 || params.tags[0] != "urgent" || params.tags[1] != "backend" {
 		t.Errorf("expected tags=['urgent', 'backend'], got %v", params.tags)
@@ -89,8 +89,8 @@ func TestTaskParams_WithStartDate(t *testing.T) {
 	startDate := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 	params := NewTask("Task").WithStartDate(startDate)
 
-	if *params.startDate != startDate.Unix() {
-		t.Errorf("expected startDate=%d, got %d", startDate.Unix(), *params.startDate)
+	if *params.startDate != startDate.Format(kanboardDateTimeFormat) {
+		t.Errorf("expected startDate=%s, got %s", startDate.Format(kanboardDateTimeFormat), *params.startDate)
 	}
 }
 
@@ -146,8 +146,8 @@ func TestTaskParams_toCreateTaskRequest(t *testing.T) {
 	if req.Score != 8 {
 		t.Errorf("expected Score=8, got %d", req.Score)
 	}
-	if req.DateDue != dueDate.Unix() {
-		t.Errorf("expected DateDue=%d, got %d", dueDate.Unix(), req.DateDue)
+	if req.DateDue != dueDate.Format(kanboardDateTimeFormat) {
+		t.Errorf("expected DateDue=%s, got %s", dueDate.Format(kanboardDateTimeFormat), req.DateDue)
 	}
 	if len(req.Tags) != 2 {
 		t.Errorf("expected 2 tags, got %d", len(req.Tags))

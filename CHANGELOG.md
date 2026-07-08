@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `TaskParams.WithDueDate`/`WithStartDate` and `TaskUpdateParams.SetDueDate`/
+  `SetStartDate`/`ClearDueDate`/`ClearStartDate` now send `date_due`/
+  `date_started` as a formatted string (`2006-01-02 15:04`) instead of a raw
+  Unix timestamp. Kanboard's `createTask`/`updateTask` JSON-RPC methods reject
+  a raw timestamp (silently, `updateTask` returns `success: false`) but accept
+  this string format. **Breaking:** `CreateTaskRequest.DateDue`/`DateStarted`
+  are now `string` (was `int64`); `UpdateTaskRequest.DateDue`/`DateStarted` are
+  now `*string` (was `*int64`).
 - `GetProjectByName` and `GetProjectByID` now return `ErrProjectNotFound` when
   Kanboard reports "not found" as the literal `false` (not just `null`), instead
   of failing with a JSON unmarshal error.

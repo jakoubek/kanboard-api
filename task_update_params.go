@@ -12,8 +12,8 @@ type TaskUpdateParams struct {
 	categoryID  *int
 	priority    *int
 	score       *int
-	dueDate     *int64
-	startDate   *int64
+	dueDate     *string
+	startDate   *string
 	reference   *string
 	tags        []string
 	tagsSet     bool // tracks whether tags were explicitly set (even to empty)
@@ -68,15 +68,15 @@ func (p *TaskUpdateParams) SetScore(score int) *TaskUpdateParams {
 
 // SetDueDate sets the due date for the task.
 func (p *TaskUpdateParams) SetDueDate(date time.Time) *TaskUpdateParams {
-	ts := date.Unix()
-	p.dueDate = &ts
+	s := date.Format(kanboardDateTimeFormat)
+	p.dueDate = &s
 	return p
 }
 
 // SetStartDate sets the start date for the task.
 func (p *TaskUpdateParams) SetStartDate(date time.Time) *TaskUpdateParams {
-	ts := date.Unix()
-	p.startDate = &ts
+	s := date.Format(kanboardDateTimeFormat)
+	p.startDate = &s
 	return p
 }
 
@@ -101,15 +101,15 @@ func (p *TaskUpdateParams) SetTags(tags ...string) *TaskUpdateParams {
 
 // ClearDueDate clears the due date from the task.
 func (p *TaskUpdateParams) ClearDueDate() *TaskUpdateParams {
-	zero := int64(0)
-	p.dueDate = &zero
+	empty := ""
+	p.dueDate = &empty
 	return p
 }
 
 // ClearStartDate clears the start date from the task.
 func (p *TaskUpdateParams) ClearStartDate() *TaskUpdateParams {
-	zero := int64(0)
-	p.startDate = &zero
+	empty := ""
+	p.startDate = &empty
 	return p
 }
 

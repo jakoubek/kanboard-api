@@ -52,8 +52,8 @@ func TestTaskUpdateParams_Chaining(t *testing.T) {
 	if *params.priority != 2 {
 		t.Errorf("expected priority=2, got %d", *params.priority)
 	}
-	if *params.dueDate != dueDate.Unix() {
-		t.Errorf("expected dueDate=%d, got %d", dueDate.Unix(), *params.dueDate)
+	if *params.dueDate != dueDate.Format(kanboardDateTimeFormat) {
+		t.Errorf("expected dueDate=%s, got %s", dueDate.Format(kanboardDateTimeFormat), *params.dueDate)
 	}
 	if *params.reference != "JIRA-456" {
 		t.Errorf("expected reference='JIRA-456', got %s", *params.reference)
@@ -75,8 +75,8 @@ func TestTaskUpdateParams_SetStartDate(t *testing.T) {
 	startDate := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
 	params := NewTaskUpdate().SetStartDate(startDate)
 
-	if *params.startDate != startDate.Unix() {
-		t.Errorf("expected startDate=%d, got %d", startDate.Unix(), *params.startDate)
+	if *params.startDate != startDate.Format(kanboardDateTimeFormat) {
+		t.Errorf("expected startDate=%s, got %s", startDate.Format(kanboardDateTimeFormat), *params.startDate)
 	}
 }
 
@@ -86,16 +86,16 @@ func TestTaskUpdateParams_ClearDueDate(t *testing.T) {
 	if params.dueDate == nil {
 		t.Fatal("expected dueDate to be set")
 	}
-	if *params.dueDate != 0 {
-		t.Errorf("expected dueDate=0, got %d", *params.dueDate)
+	if *params.dueDate != "" {
+		t.Errorf("expected dueDate='', got %s", *params.dueDate)
 	}
 }
 
 func TestTaskUpdateParams_ClearStartDate(t *testing.T) {
 	params := NewTaskUpdate().ClearStartDate()
 
-	if *params.startDate != 0 {
-		t.Errorf("expected startDate=0, got %d", *params.startDate)
+	if *params.startDate != "" {
+		t.Errorf("expected startDate='', got %s", *params.startDate)
 	}
 }
 
@@ -139,8 +139,8 @@ func TestTaskUpdateParams_toUpdateTaskRequest(t *testing.T) {
 	if *req.Priority != 2 {
 		t.Errorf("expected Priority=2, got %d", *req.Priority)
 	}
-	if *req.DateDue != dueDate.Unix() {
-		t.Errorf("expected DateDue=%d, got %d", dueDate.Unix(), *req.DateDue)
+	if *req.DateDue != dueDate.Format(kanboardDateTimeFormat) {
+		t.Errorf("expected DateDue=%s, got %s", dueDate.Format(kanboardDateTimeFormat), *req.DateDue)
 	}
 	if len(req.Tags) != 1 || req.Tags[0] != "urgent" {
 		t.Errorf("expected Tags=['urgent'], got %v", req.Tags)

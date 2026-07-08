@@ -289,13 +289,13 @@ type CreateTaskRequest struct {
 	CreatorID           int      `json:"creator_id,omitempty"`
 	ColorID             string   `json:"color_id,omitempty"`
 	CategoryID          int      `json:"category_id,omitempty"`
-	DateDue             int64    `json:"date_due,omitempty"`
+	DateDue             string   `json:"date_due,omitempty"`
 	Score               int      `json:"score,omitempty"`
 	SwimlaneID          int      `json:"swimlane_id,omitempty"`
 	Priority            int      `json:"priority,omitempty"`
 	Reference           string   `json:"reference,omitempty"`
 	Tags                []string `json:"tags,omitempty"`
-	DateStarted         int64    `json:"date_started,omitempty"`
+	DateStarted         string   `json:"date_started,omitempty"`
 	RecurrenceStatus    int      `json:"recurrence_status,omitempty"`
 	RecurrenceTrigger   int      `json:"recurrence_trigger,omitempty"`
 	RecurrenceFactor    int      `json:"recurrence_factor,omitempty"`
@@ -312,11 +312,11 @@ type UpdateTaskRequest struct {
 	ColorID             *string  `json:"color_id,omitempty"`
 	OwnerID             *int     `json:"owner_id,omitempty"`
 	CategoryID          *int     `json:"category_id,omitempty"`
-	DateDue             *int64   `json:"date_due,omitempty"`
+	DateDue             *string  `json:"date_due,omitempty"`
 	Score               *int     `json:"score,omitempty"`
 	Priority            *int     `json:"priority,omitempty"`
 	Reference           *string  `json:"reference,omitempty"`
-	DateStarted         *int64   `json:"date_started,omitempty"`
+	DateStarted         *string  `json:"date_started,omitempty"`
 	RecurrenceStatus    *int     `json:"recurrence_status,omitempty"`
 	RecurrenceTrigger   *int     `json:"recurrence_trigger,omitempty"`
 	RecurrenceFactor    *int     `json:"recurrence_factor,omitempty"`

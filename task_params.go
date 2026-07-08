@@ -2,6 +2,11 @@ package kanboard
 
 import "time"
 
+// kanboardDateTimeFormat is the string format Kanboard's JSON-RPC API expects
+// for date_due/date_started. Kanboard rejects raw Unix timestamps for these
+// fields (updateTask/createTask return success=false) but accepts this format.
+const kanboardDateTimeFormat = "2006-01-02 15:04"
+
 // TaskParams is a fluent builder for task creation configuration.
 // It is a pure configuration object with no I/O.
 type TaskParams struct {
@@ -14,8 +19,8 @@ type TaskParams struct {
 	colorID     *string
 	priority    *int
 	score       *int
-	dueDate     *int64
-	startDate   *int64
+	dueDate     *string
+	startDate   *string
 	swimlaneID  *int
 	reference   *string
 	tags        []string
@@ -78,15 +83,15 @@ func (p *TaskParams) WithScore(score int) *TaskParams {
 
 // WithDueDate sets the due date for the task.
 func (p *TaskParams) WithDueDate(date time.Time) *TaskParams {
-	ts := date.Unix()
-	p.dueDate = &ts
+	s := date.Format(kanboardDateTimeFormat)
+	p.dueDate = &s
 	return p
 }
 
 // WithStartDate sets the start date for the task.
 func (p *TaskParams) WithStartDate(date time.Time) *TaskParams {
-	ts := date.Unix()
-	p.startDate = &ts
+	s := date.Format(kanboardDateTimeFormat)
+	p.startDate = &s
 	return p
 }
 
