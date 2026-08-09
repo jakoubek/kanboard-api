@@ -257,6 +257,14 @@ type TaskLink struct {
 	Title          string    `json:"title"`
 }
 
+// Link represents a task link type as configured in Kanboard's "links" table.
+// A link type without an opposite direction (e.g. "relates to") has OppositeID 0.
+type Link struct {
+	ID         StringInt `json:"id"`
+	Label      string    `json:"label"`
+	OppositeID StringInt `json:"opposite_id"`
+}
+
 // TaskFile represents a file attached to a task.
 type TaskFile struct {
 	ID           StringInt   `json:"id"`

@@ -169,6 +169,9 @@ comment, _ := client.Task(taskID).AddComment(ctx, userID, "Comment text")
 ### Links
 
 ```go
+// Get the link types configured in the instance ("relates to", "blocks", ...)
+linkTypes, _ := client.GetAllLinks(ctx)
+
 // Get task links
 links, _ := client.Task(taskID).GetLinks(ctx)
 

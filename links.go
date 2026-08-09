@@ -5,6 +5,34 @@ import (
 	"fmt"
 )
 
+// GetAllLinks returns all link types configured in the Kanboard instance
+// (e.g. "relates to", "blocks", "is blocked by"). The IDs are instance-specific:
+// they match Kanboard's default seed only as long as no link type has been
+// added, removed or reordered.
+func (c *Client) GetAllLinks(ctx context.Context) ([]Link, error) {
+	var result []Link
+	if err := c.call(ctx, "getAllLinks", nil, &result); err != nil {
+		return nil, fmt.Errorf("getAllLinks: %w", err)
+	}
+
+	return result, nil
+}
+
+// GetOppositeLinkID returns the ID of the link type pointing in the opposite
+// direction, or 0 if the link type has no opposite. GetAllLinks already carries
+// this information in Link.OppositeID, so this is only needed for a lookup of a
+// single link type.
+func (c *Client) GetOppositeLinkID(ctx context.Context, linkID int) (int, error) {
+	params := map[string]int{"link_id": linkID}
+
+	var result StringInt
+	if err := c.call(ctx, "getOppositeLinkId", params, &result); err != nil {
+		return 0, fmt.Errorf("getOppositeLinkId: %w", err)
+	}
+
+	return int(result), nil
+}
+
 // GetAllTaskLinks returns all links for a task.
 func (c *Client) GetAllTaskLinks(ctx context.Context, taskID int) ([]TaskLink, error) {
 	params := map[string]int{"task_id": taskID}
