@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.7.0] - 2026-08-09
+
+### Added
+- `GetAllLinks` returns the link types configured in the Kanboard instance
+  (`relates to`, `blocks`, `is blocked by`, …) as `[]Link` with `ID`, `Label`
+  and `OppositeID`. The IDs are instance-specific, so callers can now resolve a
+  relation to the correct `link_id` at runtime instead of hardcoding Kanboard's
+  default seed values. A link type without an opposite direction has
+  `OppositeID` 0.
+- `GetOppositeLinkID` looks up the opposite direction of a single link type
+  (returns 0 if there is none).
+
 ### Fixed
 - `TaskParams.WithDueDate`/`WithStartDate` and `TaskUpdateParams.SetDueDate`/
   `SetStartDate`/`ClearDueDate`/`ClearStartDate` now send `date_due`/
