@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TaskParams.WithTimeEstimated`/`WithTimeSpent` and `TaskUpdateParams.SetTimeEstimated`/`SetTimeSpent` write `time_estimated`/`time_spent` (hours, decimals like 2.5 allowed) on task create and update; `CreateTaskRequest`/`UpdateTaskRequest` carry the new fields.
+
 ## [v1.7.0] - 2026-08-09
 
 ### Added
