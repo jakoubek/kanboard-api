@@ -14,6 +14,8 @@ type TaskUpdateParams struct {
 	score       *int
 	dueDate     *string
 	startDate   *string
+	timeEst     *float64
+	timeSpent   *float64
 	reference   *string
 	tags        []string
 	tagsSet     bool // tracks whether tags were explicitly set (even to empty)
@@ -77,6 +79,18 @@ func (p *TaskUpdateParams) SetDueDate(date time.Time) *TaskUpdateParams {
 func (p *TaskUpdateParams) SetStartDate(date time.Time) *TaskUpdateParams {
 	s := date.Format(kanboardDateTimeFormat)
 	p.startDate = &s
+	return p
+}
+
+// SetTimeEstimated sets the estimated time in hours (decimals allowed, e.g. 2.5).
+func (p *TaskUpdateParams) SetTimeEstimated(hours float64) *TaskUpdateParams {
+	p.timeEst = &hours
+	return p
+}
+
+// SetTimeSpent sets the spent time in hours (decimals allowed, e.g. 1.25).
+func (p *TaskUpdateParams) SetTimeSpent(hours float64) *TaskUpdateParams {
+	p.timeSpent = &hours
 	return p
 }
 
@@ -160,6 +174,12 @@ func (p *TaskUpdateParams) toUpdateTaskRequest(taskID int) UpdateTaskRequest {
 	}
 	if p.startDate != nil {
 		req.DateStarted = p.startDate
+	}
+	if p.timeEst != nil {
+		req.TimeEstimated = p.timeEst
+	}
+	if p.timeSpent != nil {
+		req.TimeSpent = p.timeSpent
 	}
 	if p.reference != nil {
 		req.Reference = p.reference

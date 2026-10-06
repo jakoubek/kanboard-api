@@ -21,6 +21,8 @@ type TaskParams struct {
 	score       *int
 	dueDate     *string
 	startDate   *string
+	timeEst     *float64
+	timeSpent   *float64
 	swimlaneID  *int
 	reference   *string
 	tags        []string
@@ -95,6 +97,18 @@ func (p *TaskParams) WithStartDate(date time.Time) *TaskParams {
 	return p
 }
 
+// WithTimeEstimated sets the estimated time in hours (decimals allowed, e.g. 2.5).
+func (p *TaskParams) WithTimeEstimated(hours float64) *TaskParams {
+	p.timeEst = &hours
+	return p
+}
+
+// WithTimeSpent sets the spent time in hours (decimals allowed, e.g. 1.25).
+func (p *TaskParams) WithTimeSpent(hours float64) *TaskParams {
+	p.timeSpent = &hours
+	return p
+}
+
 // InSwimlane sets the swimlane ID for the task.
 func (p *TaskParams) InSwimlane(swimlaneID int) *TaskParams {
 	p.swimlaneID = &swimlaneID
@@ -150,6 +164,12 @@ func (p *TaskParams) toCreateTaskRequest(projectID int) CreateTaskRequest {
 	}
 	if p.startDate != nil {
 		req.DateStarted = *p.startDate
+	}
+	if p.timeEst != nil {
+		req.TimeEstimated = *p.timeEst
+	}
+	if p.timeSpent != nil {
+		req.TimeSpent = *p.timeSpent
 	}
 	if p.swimlaneID != nil {
 		req.SwimlaneID = *p.swimlaneID

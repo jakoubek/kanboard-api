@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -267,5 +268,26 @@ func TestClient_UpdateTaskFromParams_OnlySetFieldsSent(t *testing.T) {
 	err := client.UpdateTaskFromParams(context.Background(), 42, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestTaskUpdateParams_SetTimeFields(t *testing.T) {
+	req := NewTaskUpdate().SetTimeEstimated(4.5).SetTimeSpent(0).toUpdateTaskRequest(42)
+
+	if req.TimeEstimated == nil || *req.TimeEstimated != 4.5 {
+		t.Errorf("expected TimeEstimated=4.5, got %v", req.TimeEstimated)
+	}
+	if req.TimeSpent == nil || *req.TimeSpent != 0 {
+		t.Errorf("expected TimeSpent=0 (set), got %v", req.TimeSpent)
+	}
+
+	b, _ := json.Marshal(req)
+	if !strings.Contains(string(b), `"time_estimated":4.5`) || !strings.Contains(string(b), `"time_spent":0`) {
+		t.Errorf("expected time fields in JSON incl. explicit zero, got %s", b)
+	}
+
+	b, _ = json.Marshal(NewTaskUpdate().toUpdateTaskRequest(42))
+	if strings.Contains(string(b), "time_") {
+		t.Errorf("unset time fields must be omitted, got %s", b)
 	}
 }

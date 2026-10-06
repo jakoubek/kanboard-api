@@ -304,6 +304,8 @@ type CreateTaskRequest struct {
 	Reference           string   `json:"reference,omitempty"`
 	Tags                []string `json:"tags,omitempty"`
 	DateStarted         string   `json:"date_started,omitempty"`
+	TimeEstimated       float64  `json:"time_estimated,omitempty"`
+	TimeSpent           float64  `json:"time_spent,omitempty"`
 	RecurrenceStatus    int      `json:"recurrence_status,omitempty"`
 	RecurrenceTrigger   int      `json:"recurrence_trigger,omitempty"`
 	RecurrenceFactor    int      `json:"recurrence_factor,omitempty"`
@@ -325,6 +327,8 @@ type UpdateTaskRequest struct {
 	Priority            *int     `json:"priority,omitempty"`
 	Reference           *string  `json:"reference,omitempty"`
 	DateStarted         *string  `json:"date_started,omitempty"`
+	TimeEstimated       *float64 `json:"time_estimated,omitempty"`
+	TimeSpent           *float64 `json:"time_spent,omitempty"`
 	RecurrenceStatus    *int     `json:"recurrence_status,omitempty"`
 	RecurrenceTrigger   *int     `json:"recurrence_trigger,omitempty"`
 	RecurrenceFactor    *int     `json:"recurrence_factor,omitempty"`

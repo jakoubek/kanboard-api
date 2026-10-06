@@ -121,6 +121,7 @@ params := kanboard.NewTask("Task Title").
     WithColor("red").
     WithPriority(3).
     WithScore(5).
+    WithTimeEstimated(2.5). // hours, decimals allowed
     WithDueDate(time.Now().Add(7 * 24 * time.Hour)).
     WithTags("feature", "v2.0").
     InColumn(columnID).

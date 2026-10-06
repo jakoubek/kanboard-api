@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -237,5 +238,25 @@ func TestBoardScope_CreateTaskFromParams(t *testing.T) {
 
 	if int(task.ID) != 42 {
 		t.Errorf("expected ID=42, got %d", task.ID)
+	}
+}
+
+func TestTaskParams_WithTimeFields(t *testing.T) {
+	req := NewTask("Task").WithTimeEstimated(2.5).WithTimeSpent(1.25).toCreateTaskRequest(1)
+
+	if req.TimeEstimated != 2.5 || req.TimeSpent != 1.25 {
+		t.Errorf("expected 2.5/1.25, got %v/%v", req.TimeEstimated, req.TimeSpent)
+	}
+
+	b, _ := json.Marshal(req)
+	var m map[string]any
+	json.Unmarshal(b, &m)
+	if m["time_estimated"] != 2.5 || m["time_spent"] != 1.25 {
+		t.Errorf("expected decimals in JSON, got %s", b)
+	}
+
+	b, _ = json.Marshal(NewTask("Task").toCreateTaskRequest(1))
+	if strings.Contains(string(b), "time_") {
+		t.Errorf("unset time fields must be omitted, got %s", b)
 	}
 }
