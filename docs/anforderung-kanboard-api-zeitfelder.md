@@ -96,8 +96,7 @@ Konsistent zum bestehenden Teststil (`types_test.go`, `tasks_test.go`):
 
 ## Nicht im Scope
 
-- **Schreibsupport:** `CreateTaskRequest`/`UpdateTaskRequest` bleiben unverändert. (Kanboard erlaubt
-  `time_estimated`/`time_spent` beim Schreiben; hqcli braucht das aber nicht. → offene Frage 1.)
+- ~~**Schreibsupport:** `CreateTaskRequest`/`UpdateTaskRequest` bleiben unverändert.~~ **Erledigt:** nachträglich umgesetzt (`WithTimeEstimated`/`WithTimeSpent`, `SetTimeEstimated`/`SetTimeSpent`, Dezimalwerte in Stunden). → offene Frage 1.
 - Die Report-Aggregation selbst — die bleibt in hqcli.
 
 ## Abnahmekriterien
@@ -124,7 +123,5 @@ Konsistent zum bestehenden Teststil (`types_test.go`, `tasks_test.go`):
 
 ## Offene Fragen
 
-1. Sollen `time_estimated`/`time_spent` auch **schreibbar** werden (in `CreateTaskRequest`/
-   `UpdateTaskRequest`)? Vorschlag: nein, außerhalb des aktuellen Bedarfs — bei Bedarf separate
-   Anforderung.
+1. ~~Sollen `time_estimated`/`time_spent` auch **schreibbar** werden (in `CreateTaskRequest`/`UpdateTaskRequest`)?~~ **Erledigt:** ja, umgesetzt und live gegen Kanboard verifiziert (createTask/updateTask akzeptieren beide Felder, auch Dezimalwerte wie 2.5; in der offiziellen API-Doku nicht aufgeführt, im Kanboard-Quellcode vorhanden).
 2. `StringFloat` **nur** `UnmarshalJSON` (Lesen) — ausreichend? Vorschlag: ja.
